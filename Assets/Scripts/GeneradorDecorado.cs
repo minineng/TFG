@@ -27,11 +27,11 @@ public class GeneradorDecorado : MonoBehaviour
 			//GetComponentInParent<RoomController> ().hasLadder = true;
 			set.transform.Rotate (new Vector3 (0, -90, 0));
 			if (derecha)
-				correccion = new Vector3 (-20f, 1f, -3);
+				correccion = new Vector3 (-17.5f, 1f, -3);
 			else {
 				Vector3 corCol;
 				corCol = new Vector3 (0, 0, 53); // correcion de las colisiones
-				correccion = new Vector3 (6f, 1f, -2);
+				correccion = new Vector3 (4f, 1f, -2);
 				set.transform.GetChild (2).transform.position = new Vector3 (set.transform.GetChild (2).transform.position.x + corCol.x, set.transform.GetChild (2).transform.position.y + corCol.y, set.transform.GetChild (2).transform.position.z + corCol.z);
 				set.transform.GetChild (3).transform.position = new Vector3 (set.transform.GetChild (3).transform.position.x + corCol.x, set.transform.GetChild (3).transform.position.y + corCol.y, set.transform.GetChild (3).transform.position.z + corCol.z);
 			}

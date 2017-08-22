@@ -16,9 +16,10 @@ public class ObjetoRecompensa : ClaseObjeto
 
     public enum tipoRecompensa
     {
+        ninguno,
         documentos,
         piezasSecretas,
-        armas,
+        armas
     };
 
     // Use this for initialization
@@ -27,6 +28,7 @@ public class ObjetoRecompensa : ClaseObjeto
         collider = this.GetComponent<BoxCollider>();
         rotationSpeed = 1;
         percentage = 0;
+        transform.Rotate(new Vector3(0, 0, 1), 90);
         signPercentage = 1;
         minHeight = transform.position.y;
         heightMovement = 1.5f;
@@ -102,12 +104,9 @@ public class ObjetoRecompensa : ClaseObjeto
 
         if (other.tag == "Player")
         {
-            print("me violan");
+            other.GetComponent<PlayerController>().addReward(tipoObjeto);
             Destroy(this.gameObject);
         }
-
-
-        print(other.tag);
     }
 
 

@@ -51,12 +51,9 @@ public class MapGenController : MonoBehaviour
 
     public enum condicionesVictoria
     {
-        desactivarTrampas = 1,
-        conseguirDocumentos = 2,
+        conseguirDocumentos = 1,
+        desactivarTrampas = 2,
         eliminarATodosLosEnemigos = 3,
-
-
-
     }
 
     // Use this for initialization
@@ -77,6 +74,8 @@ public class MapGenController : MonoBehaviour
         rellenarParedes();
 
         comprobacionEdificio();
+
+
         //printListaHab ();
         //lecDif ();
 
@@ -114,8 +113,8 @@ public class MapGenController : MonoBehaviour
         print(lista);
     }*/
 
-    
-        private void comprobacionEdificio()
+
+    private void comprobacionEdificio()
     {
         int pisoActual = 0;
         int habActual = 0;
@@ -128,66 +127,31 @@ public class MapGenController : MonoBehaviour
 
         while (cont < idConectados.Count)
         {
-            //print("La habitacion "+ (idConectados[cont]).id+" conecta con "+ (idConectados[cont]).conectaCon.Count+" habitaciones");
-
-            for(int i=0;i < idConectados[cont].conectaCon.Count; i++)
+            for (int i = 0; i < idConectados[cont].conectaCon.Count; i++)
             {
                 bool yaEstaDentro = false;
 
-                for(int j=0; j< idConectados.Count; j++)
+                for (int j = 0; j < idConectados.Count; j++)
                 {
                     if (idConectados[j].id == idConectados[cont].conectaCon[i].id || idConectados[cont].conectaCon[i].id == -1)
                         yaEstaDentro = true;
                 }
 
-
                 if (!yaEstaDentro)
-                {
-                    //print("Añado la habitacion " + idConectados[cont].conectaCon[i].id);
                     idConectados.Add(idConectados[cont].conectaCon[i]);
-
-                }
             }
-
-
             cont++;
-
         }
 
         string lista = "las habitaciones conectadas son: ";
         for (int i = 0; i < idConectados.Count; i++)
             lista += idConectados[i].id + ", ";
         print(lista);
-    }
-    
+
+        if(condicionVictoria == condicionesVictoria.conseguirDocumentos)
+            idConectados[idConectados.Count-1].habitacion.GetComponent<RoomController>().reward = ObjetoRecompensa.tipoRecompensa.documentos;
 
 
-
-    private bool isTouchingThisRoom(List<estructuraHabitacion> lista, estructuraHabitacion auxHab)
-    {
-        bool aux = false;
-        for (int dentro = 0; dentro < lista.Count; dentro++)
-        {
-            for (int i = 0; i < auxHab.conectaCon.Count; i++)
-            {
-                if (auxHab.conectaCon[i].id == lista[dentro].id) //Si conecta con uno de ellos
-                {
-                    aux = true; ;
-                }
-            }
-        }
-        for (int dentro = 0; dentro < lista.Count; dentro++)
-        {
-            for (int i = 0; i < auxHab.conectaCon.Count; i++)
-            {
-                if (auxHab.id == lista[dentro].id) //Y no está presente, se devuelve true
-                {
-                    aux = false; ;
-                }
-            }
-        }
-
-        return aux;
     }
 
     private void matrixInitialator()
@@ -635,7 +599,7 @@ public class MapGenController : MonoBehaviour
 
                 if (habitacion.GetComponent<RoomController>().ladderPosition != 0)
                 {
-                    print("La habitacion "+ listaPisos[pisoActual].habitaciones[habActual].id +" conecta con "+ (listaPisos[pisoActual + 1].habitaciones[getIndexHabitacionPorCoordenada(pisoActual+1, listaPisos[pisoActual].escaleraEn)].id)); 
+                    print("La habitacion " + listaPisos[pisoActual].habitaciones[habActual].id + " conecta con " + (listaPisos[pisoActual + 1].habitaciones[getIndexHabitacionPorCoordenada(pisoActual + 1, listaPisos[pisoActual].escaleraEn)].id));
                     listaPisos[pisoActual].habitaciones[habActual].conectaCon.Add(listaPisos[pisoActual + 1].habitaciones[getIndexHabitacionPorCoordenada(pisoActual + 1, listaPisos[pisoActual].escaleraEn)]);
                     listaPisos[pisoActual + 1].habitaciones[getIndexHabitacionPorCoordenada(pisoActual + 1, listaPisos[pisoActual].escaleraEn)].conectaCon.Add(listaPisos[pisoActual].habitaciones[habActual]);
                 }
