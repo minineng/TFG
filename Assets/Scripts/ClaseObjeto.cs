@@ -10,6 +10,7 @@ public class ClaseObjeto : MonoBehaviour {
 	public bool habilitado;
 	public float damage;
 	public float ruido;
+    public bool oculta;
 	public Animator anim;
 
 	// Use this for initialization

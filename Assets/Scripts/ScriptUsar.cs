@@ -4,12 +4,15 @@ using UnityEngine;
 
 public class ScriptUsar : MonoBehaviour {
 
-
 	private BoxCollider col;
+    private PlayerController player;
+
 	// Use this for initialization
 	void Start () {
 		col = GetComponent<BoxCollider> ();
-	}
+        player = transform.parent.GetComponent<PlayerController>();
+
+    }
 
 	// Update is called once per frame
 	void Update () {
@@ -56,9 +59,14 @@ public class ScriptUsar : MonoBehaviour {
 				break;
 			case "Puerta":
 				if (Input.GetButtonDown ("Use")) {
-					print ("Uso la puerta");
-					other.GetComponent<ScriptPuerta> ().usar ();
-					//GetComponentInParent<ScriptPuerta> ().usar ();
+                        if (other.GetComponent<ScriptPuerta>().isExit)
+                            player.endLevel();
+                        else
+                        {
+                            print("Uso la puerta");
+                            other.GetComponent<ScriptPuerta>().usar();
+                            //GetComponentInParent<ScriptPuerta> ().usar ();
+                        }
 				}
 				break;
 			case "Escaleras":

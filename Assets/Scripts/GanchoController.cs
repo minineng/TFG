@@ -18,7 +18,7 @@ public class GanchoController : ObjetoUso{
 
 	// Use this for initialization
 	void Start () {
-        flyingTime = 0.5f;
+        flyingTime = 0.25f;
 
     }
 	

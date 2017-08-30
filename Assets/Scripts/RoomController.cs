@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class RoomController : MonoBehaviour
 {
@@ -29,13 +30,14 @@ public class RoomController : MonoBehaviour
 
     private Vector3 limiteIzquierdo;
     private Vector3 limiteDerecho;
+    public GameObject mapGenController;
     private float altTecho;
-
+    
 
     private GameObject suelo;
     private GameObject techo;
     private GameObject spawner;
-    
+
     public roomSize tamanyo;
     public listaEstilos estilo;
     public tipo tipoHabitacion;
@@ -87,6 +89,7 @@ public class RoomController : MonoBehaviour
 
     public void Start()
     {
+
         altTecho = 66.5f;
         limiteIzquierdo = new Vector3();
         limiteDerecho = new Vector3();
@@ -145,8 +148,8 @@ public class RoomController : MonoBehaviour
                     }
                 }
 
-                if(!tall)
-                    suelo.transform.Find("ParedSmall").transform.localScale = new Vector3 (suelo.transform.Find("ParedSmall").transform.localScale.x, suelo.transform.Find("ParedSmall").transform.localScale.y, 1.105f);
+                if (!tall)
+                    suelo.transform.Find("ParedSmall").transform.localScale = new Vector3(suelo.transform.Find("ParedSmall").transform.localScale.x, suelo.transform.Find("ParedSmall").transform.localScale.y, 1.105f);
                 //suelo.transform.localScale = new Vector3(0.5f, 1f, 1f);
 
                 suelo.transform.position = new Vector3(suelo.transform.position.x - 50.5f, suelo.transform.position.y, suelo.transform.position.z);
@@ -261,6 +264,7 @@ public class RoomController : MonoBehaviour
         disposicionDecorados();
         disposicionGeneradoresPuertas();
         disposicionGeneradoresObjetos();
+        disposicionGeneradoresSitiosOcultos();
 
         //print ("hay "+generadoresDecorado.Count+ " generadores en esta habitacion");
 
@@ -334,6 +338,111 @@ public class RoomController : MonoBehaviour
             }
         }
     }
+
+    private void disposicionGeneradoresSitiosOcultos()
+    {
+        float percentage = 50 - (dificultad - 1) * 10;
+        if (percentage < 20)
+            percentage = 15;
+
+        int auxRand = Random.Range(0, 100);
+
+        if (auxRand <= percentage)
+        {
+            //print("Salgo con " + auxRand);
+            int auxRandElement = Random.Range(1, numeroElementos + 1);
+
+
+            //print("Elementos " + auxRandElement);
+
+            Vector3 position;
+
+
+            float auxDiv = 0;
+            switch (tamanyo)
+            {
+                case roomSize.small:
+                    auxDiv = (tHab / (numeroElementos));
+                    break;
+                case roomSize.medium:
+                    auxDiv = (tHab / (numeroElementos));
+                    break;
+                case roomSize.large:
+                    auxDiv = (tHab / (numeroElementos));
+                    break;
+            }
+
+            List<int> elements = new List<int>();
+
+            while (elements.Count < auxRandElement)
+            {
+                int auxPos = Random.Range(1, numeroElementos+1);
+
+                if (!elements.Contains(auxPos))
+                {
+                    position = limiteIzquierdo;
+                    position.x = position.x + (auxPos * auxDiv);
+                    position.z = -64.04f;
+
+                    //print("Pongo el "+ (elements.Count+1) + " en la posicion "+auxPos);
+
+                    GameObject objeto = Instantiate(generadorPrefab, position, Quaternion.identity);
+                    objeto.transform.position = new Vector3(position.x - 40, position.y, position.z);
+                    objeto.GetComponent<GeneradorObjetos>().nivel = dificultad;
+                    objeto.GetComponent<GeneradorObjetos>().estilo = estilo;
+
+                    GameObject auxObj = objeto.GetComponent<GeneradorObjetos>().generateObjects(GeneradorObjetos.tipo.SitioOculto);
+                    auxObj.transform.name = "Sitio Oculto " + (elements.Count);
+                    objeto.transform.SetParent(this.transform);
+                    auxObj.transform.SetParent(this.transform);
+                    elements.Add(auxPos);
+                }
+            }
+        }
+    }
+
+    /*
+     * private void disposicionGeneradoresSitiosOcultos()
+    {
+        float percentage = 50 - (dificultad - 1) * 10;
+        if (percentage < 20)
+            percentage = 15;
+
+        //int auxRand = Random.Range(0, 100);
+        int auxRand = 1;
+
+
+        if (auxRand <= percentage)
+        {
+            print("Salgo con " + auxRand);
+            int auxRandElement = Random.Range(1, numeroElementos + 1);
+
+
+            print("Elementos " + auxRandElement);
+
+            Vector3 position;
+
+            for (int i = 1; i <= auxRandElement; i++)
+            {
+                position = limiteIzquierdo;
+                position.x = position.x + i * (tHab / (auxRandElement + 1));
+                position.z = -64.04f;
+
+                print(position.x + " + " + i + " * (" + tHab + " / " + auxRandElement + ")");
+
+                GameObject objeto = Instantiate(generadorPrefab, position, Quaternion.identity);
+                objeto.transform.position = new Vector3(position.x - 40, position.y, position.z);
+                objeto.GetComponent<GeneradorObjetos>().nivel = dificultad;
+                objeto.GetComponent<GeneradorObjetos>().estilo = estilo;
+
+                GameObject auxObj = objeto.GetComponent<GeneradorObjetos>().generateObjects(GeneradorObjetos.tipo.SitioOculto);
+                auxObj.transform.name = "Sitio Oculto " + (i - 1);
+                objeto.transform.SetParent(this.transform);
+                auxObj.transform.SetParent(this.transform);
+            }
+        }
+    }
+     * */
 
     private void disposicionDecorados()
     {

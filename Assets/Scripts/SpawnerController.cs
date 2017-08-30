@@ -20,7 +20,9 @@ public class SpawnerController : MonoBehaviour {
 			case characters.Player:
 				//print ("Saco un jugador");
 				GameObject personaje = Instantiate (PlayerPrefab, posicion, Quaternion.identity);
-				personaje.transform.Rotate (new Vector3 (0, 90, 0));
+                    personaje.transform.SetParent(transform.parent.parent);
+
+                personaje.transform.Rotate (new Vector3 (0, 90, 0));
 				break;
 			case characters.Enemy:
 				print ("Saco un enemigo");

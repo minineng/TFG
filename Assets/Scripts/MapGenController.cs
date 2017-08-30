@@ -2,21 +2,24 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
+using UnityEngine.AI;
 
 
 
 
 public class MapGenController : MonoBehaviour
 {
-
+    
     public int NumPisos;
     public int NumHabitaciones;
+    private int cantHabitacionesTotal;
     public GameObject room;
     public int dificultad;
+    public GameObject player;
     public RoomController.listaEstilos estilo;
     private List<int> probDificultad;
     private List<estructuraPisos> listaPisos;
-    public condicionesVictoria condicionVictoria;
+    public List<condicionesVictoria> objetivosMision;
     public int[,] matrizHabitaciones;
 
     private List<GameObject> roomList;
@@ -52,22 +55,24 @@ public class MapGenController : MonoBehaviour
     public enum condicionesVictoria
     {
         conseguirDocumentos = 1,
-        desactivarTrampas = 2,
-        eliminarATodosLosEnemigos = 3,
+        conseguirArmas = 2,
+        conseguirPiezas = 3,
+        desactivarTrampas = 4,
+        eliminarATodosLosEnemigos = 5,
     }
 
     // Use this for initialization
     void Start()
     {
-
+        cantHabitacionesTotal = 0;
+        if(objetivosMision.Count == 0)
+            objetivosMision = new List<condicionesVictoria>();
         roomList = new List<GameObject>();
         listaPisos = new List<estructuraPisos>();
         probDificultad = new List<int>();
         matrizHabitaciones = new int[NumPisos, NumHabitaciones * 2];
         matrixInitialator();
         calculoCondicionVictoria();
-
-
         lecturaDificultad();
         mapGeneration();
         contruccionMatrizPisos(-1);
@@ -75,7 +80,7 @@ public class MapGenController : MonoBehaviour
 
         comprobacionEdificio();
 
-
+        print("Numero total de habitaciones " + cantHabitacionesTotal);
         //printListaHab ();
         //lecDif ();
 
@@ -148,10 +153,31 @@ public class MapGenController : MonoBehaviour
             lista += idConectados[i].id + ", ";
         print(lista);
 
-        if(condicionVictoria == condicionesVictoria.conseguirDocumentos)
-            idConectados[idConectados.Count-1].habitacion.GetComponent<RoomController>().reward = ObjetoRecompensa.tipoRecompensa.documentos;
+        if (objetivosMision.Contains(condicionesVictoria.conseguirDocumentos))
+            idConectados[idConectados.Count - 1].habitacion.GetComponent<RoomController>().reward = ObjetoRecompensa.tipoRecompensa.documentos;
+
+        if (objetivosMision.Contains(condicionesVictoria.conseguirPiezas))
+        {
+            int auxID = cantHabitacionesTotal * 2 / 3;
+            bool done = false;
+            while (!done)
+            {
+                if (getRoomObjectByID(auxID) != null)
+                {
+                    if (getRoomObjectByID(auxID).GetComponent<RoomController>().reward == ObjetoRecompensa.tipoRecompensa.ninguno)
+                    {
+                        getRoomObjectByID(auxID).GetComponent<RoomController>().reward = ObjetoRecompensa.tipoRecompensa.piezasSecretas;
+                        print("Genero piezas en "+auxID);
+                        done = true;
+                    }
+                    else 
+                        auxID++;
+                }
+
+            }
 
 
+        }
     }
 
     private void matrixInitialator()
@@ -389,7 +415,10 @@ public class MapGenController : MonoBehaviour
                     //print ("--- Soy la habitacion "+idRoom+" con dificultad -> "+aux+" ---");
 
                     habitacion.GetComponent<RoomController>().dificultad = dificultadParaHabitacion();
+                    habitacion.GetComponent<RoomController>().mapGenController = this.gameObject;
+                    habitacion.transform.SetParent(this.transform);
                     roomList.Add(habitacion);
+                    cantHabitacionesTotal++;
                     idRoom++;
                     habActual++;
 
@@ -518,6 +547,24 @@ public class MapGenController : MonoBehaviour
         return aux;
     }
 
+    public GameObject getRoomObjectByID(int id)
+    {
+        GameObject aux = null;
+
+        for (int pisoActual = 0; pisoActual < NumPisos; pisoActual++)
+        {
+            for (int habActual = 0; habActual < listaPisos[pisoActual].habitaciones.Count; habActual++)
+            {
+                if (listaPisos[pisoActual].habitaciones[habActual].id == id)
+                    aux = listaPisos[pisoActual].habitaciones[habActual].habitacion;
+
+            }
+        }
+
+        return aux;
+
+    }
+
 
 
     public void rellenarParedes()
@@ -599,7 +646,7 @@ public class MapGenController : MonoBehaviour
 
                 if (habitacion.GetComponent<RoomController>().ladderPosition != 0)
                 {
-                    print("La habitacion " + listaPisos[pisoActual].habitaciones[habActual].id + " conecta con " + (listaPisos[pisoActual + 1].habitaciones[getIndexHabitacionPorCoordenada(pisoActual + 1, listaPisos[pisoActual].escaleraEn)].id));
+                    //print("La habitacion " + listaPisos[pisoActual].habitaciones[habActual].id + " conecta con " + (listaPisos[pisoActual + 1].habitaciones[getIndexHabitacionPorCoordenada(pisoActual + 1, listaPisos[pisoActual].escaleraEn)].id));
                     listaPisos[pisoActual].habitaciones[habActual].conectaCon.Add(listaPisos[pisoActual + 1].habitaciones[getIndexHabitacionPorCoordenada(pisoActual + 1, listaPisos[pisoActual].escaleraEn)]);
                     listaPisos[pisoActual + 1].habitaciones[getIndexHabitacionPorCoordenada(pisoActual + 1, listaPisos[pisoActual].escaleraEn)].conectaCon.Add(listaPisos[pisoActual].habitaciones[habActual]);
                 }

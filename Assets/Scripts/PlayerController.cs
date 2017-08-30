@@ -6,8 +6,7 @@ using UnityEngine.UI;
 public class PlayerController : MonoBehaviour
 {
 
-    public float velocidad;
-    public float maxSpeed;
+
     Rigidbody rigidBody;
     CharacterController controller;
     BoxCollider colliderUsar;
@@ -15,25 +14,50 @@ public class PlayerController : MonoBehaviour
     int estado;
     //0 normal / 1 Aturdido
     float tiempoAturdido;
-    
+
     bool facingRight;
     public bool cambioProfundidad;
 
     bool lanzado;
     float tiempoGancho;
-    float tiempoVueloGancho;
+    public float tiempoVueloGancho;
     Vector3 intialPosition;
     Vector3 finalPosition;
     int contGancho;
+
+    public bool enSitioOculto;
+    public bool hidden;
+
+    public enum estadosMovimiento
+    {
+        parado = 0,
+        moviendose = 1,
+        frenando = 2,
+        cambiandoDeDireccion = 3,
+    };
+
+    private estadosMovimiento movimiento;
 
     private int shurikenCount;
     private float shurikenRecoveryTime;
     private bool recoveringShuriken;
     private float TimeNextShuriken;
+    public float rollingDistance;
+    public bool rolling;
+    public float rollingTime;
+    public float rollingActualTime;
+    public float rollingInitialPosition;
+    public float rollingFinalPosition;
 
 
     public List<ObjetoRecompensa.tipoRecompensa> missionRewards;
+    public MapGenController mapGenControl;
 
+    public float velocidad;
+    public float multiplicadorBase;
+    public float multiplicadorCorrer;
+    public float multiplicadorSigilo;
+    public float maxSpeed;
 
     public float vida;
     public float maxVida;
@@ -48,6 +72,8 @@ public class PlayerController : MonoBehaviour
 
     private Vector3 moveDirection;
     private bool modoSigilo;
+    private float modoSigiloHeight;
+    private float normalHeight;
     private GameObject canvas;
     private GameObject mira;
 
@@ -68,12 +94,24 @@ public class PlayerController : MonoBehaviour
     // Use this for initialization
     void Start()
     {
+        movimiento = estadosMovimiento.parado;
+        if (transform.parent != null)
+        {
+            transform.parent.GetComponent<MapGenController>().player = this.gameObject;
+            mapGenControl = transform.parent.GetComponent<MapGenController>();
+        }
+        hidden = false;
+        enSitioOculto = false;
         gancho = transform.Find("Gadgets").Find("Gancho").gameObject;
-        tiempoVueloGancho = 2;
+        tiempoVueloGancho = 0.5f;
         recoveringShuriken = false;
         usandoObjeto = false;
         lanzado = false;
         pulsado = false;
+        rollingDistance = 10;
+        rollingTime = 1.3f;
+        modoSigiloHeight = 2.53f;
+        normalHeight = 3.96f;
         shurikenRecoveryTime = 1.5f;
         objetoEquipado = 0;
         distMaximaMira = 75;
@@ -81,7 +119,11 @@ public class PlayerController : MonoBehaviour
         rigidBody = GetComponent<Rigidbody>();
         anim = GetComponent<Animator>();
         controller = GetComponent<CharacterController>();
-        velocidad = 30;
+        velocidad = 60;
+        rolling = false;
+        multiplicadorBase = 1;
+        multiplicadorCorrer = 2;
+        multiplicadorSigilo = 0.25f;
         tiempoAturdido = 0;
         maxVida = 100;
         vida = maxVida;
@@ -104,6 +146,34 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+
+        if (vida <= 0 && estado != -1) // muerte
+            estado = -1;
+
+        switch (estado)
+        {
+            case -3://subiendo escalera
+                print("ESTOY EN EL ESTADO 3");
+                break;
+            case -2://aturdido
+                if (Time.time > tiempoAturdido)
+                    estado = 0;
+                break;
+            case -1://muerto
+                print("Has muerto");
+                break;
+            case 0://normal
+                updateControl();
+                break;
+
+        }
+        elementosUI();
+        elementosAnim();
+
+    }
+
+    private void updateControl()
+    {
         if (Input.GetAxis("ChangeObject") > 0 && !pulsado && !usandoObjeto)
         {
             pulsado = true;
@@ -125,122 +195,162 @@ public class PlayerController : MonoBehaviour
         controlMira();
         usoObjeto();
 
+        float moveH = Input.GetAxis("Horizontal");
+        float moveV = Input.GetAxis("Vertical");
 
-
-        if (vida <= 0 && estado != -1) // muerte
-            estado = -1;
-
-        if (estado >= 0)
-        { //vivo
-            float moveH = Input.GetAxis("Horizontal");
-            float moveV = Input.GetAxis("Vertical");
-
-            if (controller.isGrounded)
+        if (controller.isGrounded)
+        {
+            if (cambioProfundidad)
             {
-                if (cambioProfundidad)
-                {
-                    moveDirection = new Vector3(moveH, 0, moveV);
-
-                }
-                else
-                {
-                    moveDirection = new Vector3(moveH, 0, 0);
-                }
-                moveDirection *= velocidad;
+                moveDirection = new Vector3(moveH, 0, moveV);
 
             }
+            else
+            {
+                moveDirection = new Vector3(moveH, 0, 0);
+            }
+            moveDirection *= velocidad * multiplicadorBase;
 
-            moveDirection.y -= gravity * Time.deltaTime;
-            controller.Move(moveDirection * Time.deltaTime);
+            if ((moveH > 0 && controller.velocity.x > 0) || (moveH < 0 && controller.velocity.x < 0))
+                movimiento = estadosMovimiento.moviendose;
+            else if ((moveH > 0 && controller.velocity.x < 0) || (moveH < 0 && controller.velocity.x > 0))
+            {
+                movimiento = estadosMovimiento.cambiandoDeDireccion;
+            }
+            else if (moveH == 0 && controller.velocity.x != 0)
+                movimiento = estadosMovimiento.frenando;
+            else if (moveH == 0 && controller.velocity.x == 0)
+                movimiento = estadosMovimiento.parado;
+
+            //print("Estoy "+movimiento);
+
+        }
+
+        if (enSitioOculto && modoSigilo)
+        {
+            hidden = true;
+            //print("ERES INVISIBLE");
+        }
+        else
+            hidden = false;
+
+        moveDirection.y -= gravity * Time.deltaTime;
+        controller.Move(moveDirection * Time.deltaTime);
+
+        if (!rolling)
+        {
 
             if (moveH < 0 && facingRight)
             {
-                facingRight = false;
+                //facingRight = false;
                 swap();
             }
             if (moveH > 0 && !facingRight)
             {
-                facingRight = true;
+                //facingRight = true;
                 swap();
             }
-
-
         }
 
-        if (Input.GetButtonDown("Run") && !modoSigilo)
+        if (Input.GetButtonDown("Run"))
         {
-            velocidad = 60;
-            anim.speed = 2;
+            if (!modoSigilo)
+            {
+                multiplicadorBase = multiplicadorCorrer;
+                anim.speed = 1.5f;
+            }
+            else
+            {
+                if (!rolling)
+                {
+                    print("EMPIEZO");
+                    rolling = true;
+                    rollingInitialPosition = transform.position.x;
+
+
+
+                    if (facingRight)
+                        rollingFinalPosition = rollingInitialPosition + rollingDistance;
+                    else
+                        rollingFinalPosition = rollingInitialPosition - rollingDistance;
+
+                    rollingActualTime = Time.time + rollingTime;
+                    anim.Play("Roll");
+                }
+            }
         }
-        else if (Input.GetButtonUp("Run") && !modoSigilo)
+        else if (Input.GetButtonUp("Run"))
         {
-            velocidad = 30;
-            anim.speed = 1;
+            if (!modoSigilo)
+            {
+                multiplicadorBase = 1;
+                anim.speed = 1;
+            }
         }
+
+        rollingController();
 
         if (controller.isGrounded && Input.GetButtonDown("Jump"))
-        {
-            //controller.Move( new Vector3(0,20f,0));
-
-        }
+            jump();
 
         ganchoUso();
 
         if (Input.GetButtonDown("ModoSigilo") && !modoSigilo)
         {
             print("Modo sigilo: ON");
-            modoSigilo = true;
-            velocidad = 10;
-            controller.height = 2.93f;
+            setModoSigilo(true);
         }
         else if (Input.GetButtonDown("ModoSigilo") && modoSigilo)
         {
             print("Modo sigilo: OFF");
-            modoSigilo = false;
-            velocidad = 30;
-            controller.height = 3.66f;
+            setModoSigilo(false);
         }
 
-        elementosUI();
 
-        elementosAnim();
+    }
 
-
-
-
-        switch (estado)
+    private void rollingController()
+    {
+        if (rolling)
         {
-            case -3://subiendo escalera
-                print("ESTOY EN EL ESTADO 3");
-                break;
-            case -2://aturdido
-                if (Time.time > tiempoAturdido)
-                    estado = 0;
-                break;
-            case -1://muerto
-                print("Has muerto");
-                break;
-            case 0://normal
 
-                break;
-                /*case 1://modo sigilo
-                    if (Input.GetButtonDown ("ModoSigilo")) {
-                        estado = 0;
-                        print ("Modo sigilo: OFF");
-                        velocidad = 30;
-                    }
-                    break;*/
-
-
-
-
+            float percentage = rollingTime - (rollingActualTime - Time.time);
+            percentage *= 1.5f;
+            //print(rollingActualTime +" - " + Time.time + " / " + rollingTime +" -> " +percentage);
+            if (rollingActualTime > Time.time)
+            {
+                if (!facingRight)
+                    percentage *= -1;
+                controller.Move(new Vector3(percentage, 0, 0));
+            }
+            else
+            {
+                rolling = false;
+            }
         }
+
+    }
+
+    public void setModoSigilo(bool var)
+    {
+        modoSigilo = var;
+        if (var)
+        {
+            multiplicadorBase = multiplicadorSigilo;
+            controller.height = modoSigiloHeight;
+        }
+        else
+        {
+            multiplicadorBase = 1;
+            controller.height = normalHeight;
+        }
+
     }
 
     public void elementosUI()
     {
         canvas.transform.Find("CanvasElementosBasicos").Find("TextoVida").GetComponent<Text>().text = "Salud: " + vida;
-        
+
         switch (objetoEquipado)
         {
             case 0:
@@ -250,9 +360,9 @@ public class PlayerController : MonoBehaviour
                 canvas.transform.Find("CanvasElementosBasicos").Find("ObjEquipado").GetComponent<Image>().sprite = Resources.Load("Images/GanchoIcono", typeof(Sprite)) as Sprite;
                 break;
             case 2:
-                if(shurikenCount==0)
+                if (shurikenCount == 0)
                     canvas.transform.Find("CanvasElementosBasicos").Find("ObjEquipado").GetComponent<Image>().sprite = Resources.Load("Images/ShurikenInactivoIcono", typeof(Sprite)) as Sprite;
-                else if(shurikenCount == 1)
+                else if (shurikenCount == 1)
                     canvas.transform.Find("CanvasElementosBasicos").Find("ObjEquipado").GetComponent<Image>().sprite = Resources.Load("Images/ShurikenIcono", typeof(Sprite)) as Sprite;
                 else if (shurikenCount == 2)
                     canvas.transform.Find("CanvasElementosBasicos").Find("ObjEquipado").GetComponent<Image>().sprite = Resources.Load("Images/ShurikenDobleIcono", typeof(Sprite)) as Sprite;
@@ -260,9 +370,9 @@ public class PlayerController : MonoBehaviour
         }
 
         RectTransform auxRect = canvas.transform.Find("CanvasElementosBasicos").Find("Barra de Vida").Find("BarraVida").GetComponent<RectTransform>();
-        auxRect.sizeDelta = new Vector2( 160* (vida / maxVida), auxRect.rect.height);
+        auxRect.sizeDelta = new Vector2(160 * (vida / maxVida), auxRect.rect.height);
 
-        if(missionRewards.Contains(ObjetoRecompensa.tipoRecompensa.documentos))
+        if (missionRewards.Contains(ObjetoRecompensa.tipoRecompensa.documentos))
             canvas.transform.Find("CanvasRecompensasMision").Find("Documentos").gameObject.SetActive(true);
         else
             canvas.transform.Find("CanvasRecompensasMision").Find("Documentos").gameObject.SetActive(false);
@@ -285,6 +395,24 @@ public class PlayerController : MonoBehaviour
 
     private void elementosAnim()
     {
+        int aux = 0;
+        switch (movimiento)
+        {
+            case estadosMovimiento.parado:
+                aux = 0;
+                break;
+            case estadosMovimiento.moviendose:
+                aux = 1;
+                break;
+            case estadosMovimiento.frenando:
+                aux = 2;
+                break;
+            case estadosMovimiento.cambiandoDeDireccion:
+                aux = 3;
+                break;
+        }
+
+        anim.SetInteger("EstadoMovimiento", aux);
         anim.SetFloat("velocidad", Mathf.Abs(controller.velocity.x));
         anim.SetBool("sigilo", modoSigilo);
 
@@ -308,14 +436,24 @@ public class PlayerController : MonoBehaviour
 
     private void swap()
     {
+        facingRight = !facingRight;
 
-        Vector3 posAux = this.transform.GetChild(1).transform.position;
-        Quaternion rotAux = this.transform.GetChild(1).transform.rotation;
+        Transform camera = transform.Find("Camera").transform;
+
+        Vector3 cameraPosAux = camera.position;
+        Quaternion cameraRotAux = camera.rotation;
+
+        Vector3 miraPosAux = mira.transform.position;
+        Quaternion miraRotAux = mira.transform.rotation;
 
         this.transform.Rotate(new Vector3(0, 180, 0));
 
-        this.transform.GetChild(1).transform.position = posAux;
-        this.transform.GetChild(1).transform.rotation = rotAux;
+        camera.position = cameraPosAux;
+        camera.rotation = cameraRotAux;
+
+        mira.transform.position = miraPosAux;
+        mira.transform.rotation = miraRotAux;
+
     }
 
     void OnTriggerEnter(Collider other)
@@ -324,10 +462,6 @@ public class PlayerController : MonoBehaviour
         {
             cambioProfundidad = true;
         }
-    }
-
-    void OnTriggerStay(Collider other)
-    {
 
     }
 
@@ -337,6 +471,7 @@ public class PlayerController : MonoBehaviour
         {
             cambioProfundidad = false;
         }
+
     }
     public void setEstado(int est)
     {
@@ -350,22 +485,49 @@ public class PlayerController : MonoBehaviour
             mira.gameObject.SetActive(true);
             float MiraH = Input.GetAxis("ApuntarHorizontal");
             float MiraV = Input.GetAxis("ApuntarVertical");
+            float margen = 0.15f;
 
-            Vector3 auxPos = new Vector3(this.transform.position.x + MiraH * distMaximaMira, this.transform.position.y + 20 + MiraV * distMaximaMira, this.transform.position.z);
+            if (Mathf.Abs(MiraH) < margen && Mathf.Abs(MiraV) < margen)
+                mira.transform.GetChild(0).gameObject.SetActive(false);
+            else
+            {
+                mira.transform.GetChild(0).gameObject.SetActive(true);
+                Vector3 auxPos = new Vector3(this.transform.position.x + MiraH * distMaximaMira, this.transform.position.y + 20 + MiraV * distMaximaMira, this.transform.position.z);
 
-            transform.Find("Gadgets").transform.position = new Vector3(this.transform.position.x + MiraH , this.transform.position.y + 20 + MiraV , this.transform.position.z);
-
-
-
-            mira.transform.position = auxPos;
-            //GetComponent<LineRenderer> ().SetPosition (0, new Vector3(this.transform.position.x,this.transform.position.y+20, this.transform.position.z));
-            //GetComponent<LineRenderer> ().SetPosition (1, mira.transform.position);
+                transform.Find("Gadgets").transform.position = new Vector3(this.transform.position.x + MiraH, this.transform.position.y + 20 + MiraV, this.transform.position.z);
+                mira.transform.position = auxPos;
+                //GetComponent<LineRenderer> ().SetPosition (0, new Vector3(this.transform.position.x,this.transform.position.y+20, this.transform.position.z));
+                //GetComponent<LineRenderer> ().SetPosition (1, mira.transform.position);
+            }
         }
         else
         {
             mira.gameObject.SetActive(false);
         }
     }
+
+    private void jump()
+    {
+        controller.Move(new Vector3(0, jumpSpeed, 0));
+    }
+
+    public void endLevel()
+    {
+
+        if (missionRewards.Count > 0)
+        {
+            if (mapGenControl.objetivosMision.Count == missionRewards.Count)
+                print("Acabo el nivel con todo");
+            else
+                print("Acabo el nivel con " + missionRewards.Count + " objetivo cumplido");
+        }
+        else
+        {
+            print("No hay ningun objetivo cumplido");
+        }
+
+    }
+
 
     private void usoObjeto()
     {
@@ -374,32 +536,25 @@ public class PlayerController : MonoBehaviour
             TimeNextShuriken = Time.time + shurikenRecoveryTime;
             recoveringShuriken = true;
         }
-        if(recoveringShuriken && TimeNextShuriken < Time.time)
+        if (recoveringShuriken && TimeNextShuriken < Time.time)
         {
             print("Recupero 1 Shuriken");
             shurikenCount++;
             recoveringShuriken = false;
         }
-        if (objetoEquipado == 1)
-            gancho.SetActive(true);
-        else
-            gancho.SetActive(false);
-
 
         switch (objetoEquipado)
         {
             case 1:
                 if (Input.GetButtonDown("UseObject") && mira.GetComponent<ScriptMira>().getConTrampilla())
                 {
+                    gancho.SetActive(true);
                     usandoObjeto = true;
 
                     mira.GetComponent<ScriptMira>().usarObjeto = true;
-                    modoSigilo = true;
-                    velocidad = 10;
-                    controller.height = 2.93f;
+                    setModoSigilo(true);
                     gancho.transform.position = transform.Find("Gadgets").transform.position;
                     intialPosition = this.transform.position;
-                    //finalPosition = mira.transform.position;
                     finalPosition = mira.GetComponent<ScriptMira>().getPosicionTrampilla();
                     gancho.GetComponent<GanchoController>().launch(finalPosition);
                     GetComponent<LineRenderer>().enabled = true;
@@ -412,9 +567,9 @@ public class PlayerController : MonoBehaviour
                 {
                     GameObject auxShuriken = Instantiate(shurikenPrefab, transform.Find("Gadgets").transform.position, Quaternion.identity);
 
-                    if(Input.GetAxis("ApuntarHorizontal") > 0 || (Input.GetAxis("ApuntarHorizontal") == 0 && facingRight))
+                    if (Input.GetAxis("ApuntarHorizontal") > 0 || (Input.GetAxis("ApuntarHorizontal") == 0 && facingRight))
                         auxShuriken.GetComponent<ShurikenController>().setDirection(new Vector3(1, 0, 0));
-                    else if(Input.GetAxis("ApuntarHorizontal") < 0 || (Input.GetAxis("ApuntarHorizontal") == 0 && !facingRight))
+                    else if (Input.GetAxis("ApuntarHorizontal") < 0 || (Input.GetAxis("ApuntarHorizontal") == 0 && !facingRight))
                         auxShuriken.GetComponent<ShurikenController>().setDirection(new Vector3(-1, 0, 0));
                     shurikenCount--;
                 }
@@ -422,137 +577,30 @@ public class PlayerController : MonoBehaviour
         }
 
     }
-
-    /*
-     * private void usoObjeto()
-    {
-        if (shurikenCount < 2 && !recoveringShuriken)
-        {
-            TimeNextShuriken = Time.time + shurikenRecoveryTime;
-            recoveringShuriken = true;
-        }
-        if(recoveringShuriken && TimeNextShuriken < Time.time)
-        {
-            print("Recupero 1 Shuriken");
-            shurikenCount++;
-            recoveringShuriken = false;
-        }
-        if (objetoEquipado == 1)
-            gancho.SetActive(true);
-        else
-            gancho.SetActive(false);
-
-
-        switch (objetoEquipado)
-        {
-            case 1:
-                if (Input.GetButtonDown("UseObject") && mira.GetComponent<ScriptUsoObjeto>().getConTrampilla())
-                {
-                    usandoObjeto = true;
-                    //controller.Move( new Vector3(mira.transform.position.x,mira.transform.position.y,0));
-                    mira.GetComponent<ScriptUsoObjeto>().usarObjeto = true;
-                    modoSigilo = true;
-                    velocidad = 10;
-                    controller.height = 2.93f;
-                    float fuerzaGancho = 70;
-                    Vector3 newPosition = new Vector3(mira.transform.position.normalized.x * fuerzaGancho, mira.transform.position.normalized.y * fuerzaGancho, 0);
-                    Debug.Log(newPosition);
-
-                    this.GetComponent<CharacterController>().Move(newPosition);
-
-                    //this.transform.position = mira.GetComponent<ScriptUsoObjeto>().positionTP;
-                    //print("Ahora deberia surcar los cielos");
-                }
-                break;
-            case 2:
-                if (Input.GetButtonDown("UseObject") && shurikenCount > 0)
-                {
-                    GameObject auxShuriken = Instantiate(shurikenPrefab, transform.Find("Gadgets").transform.position, Quaternion.identity);
-
-                    if(Input.GetAxis("ApuntarHorizontal") > 0 || (Input.GetAxis("ApuntarHorizontal") == 0 && facingRight))
-                        auxShuriken.GetComponent<ShurikenController>().setDirection(new Vector3(1, 0, 0));
-                    else if(Input.GetAxis("ApuntarHorizontal") < 0 || (Input.GetAxis("ApuntarHorizontal") == 0 && !facingRight))
-                        auxShuriken.GetComponent<ShurikenController>().setDirection(new Vector3(-1, 0, 0));
-                    shurikenCount--;
-                }
-                break;
-        }
-
-    }
-     */
 
     private void ganchoUso()
     {
-        if (usandoObjeto && objetoEquipado == 1 )
+        if (usandoObjeto && objetoEquipado == 1)
         {
+            GetComponent<LineRenderer>().SetPosition(0, new Vector3(transform.position.x, transform.position.y + 20, transform.position.z));
             GetComponent<LineRenderer>().SetPosition(1, gancho.transform.position);
-            if (gancho.GetComponent<GanchoController>().getReady() && Time.time< tiempoGancho)
+            if (gancho.GetComponent<GanchoController>().getReady() && Time.time < tiempoGancho)
             {
                 gancho.transform.position = finalPosition;
                 float percentage = (Time.time - (tiempoGancho - tiempoVueloGancho)) / tiempoVueloGancho; ;
                 transform.position = Vector3.Lerp(intialPosition, finalPosition, percentage);
             }
-            else if(gancho.GetComponent<GanchoController>().getReady() && Time.time > tiempoGancho)
+            else if (gancho.GetComponent<GanchoController>().getReady() && Time.time > tiempoGancho)
             {
                 usandoObjeto = false;
                 gancho.transform.position = transform.Find("Gadgets").transform.position;
+                gancho.SetActive(false);
                 GetComponent<LineRenderer>().enabled = false;
             }
         }
 
 
     }
-
-    /**
-     * private void gancho()
-    {
-        float duracionGancho = 0.5f;
-        if (!usandoObjeto && Input.GetButton("Jump"))
-        {
-            Vector3 posIn = new Vector3(this.transform.position.x, this.transform.position.y + 20, this.transform.position.z);
-            posFinGancho = mira.transform.position;
-            tiempoGancho = Time.time;
-            usandoObjeto = true;
-            print("usandoObjeto es true");
-            //print ("Lanzo el gancho en "+tiempoGancho+" hasta "+(tiempoGancho + duracionGancho)+" posFinal "+mira.transform.position.x+","+mira.transform.position.y);
-        }
-        else
-        {
-            if (tiempoGancho + duracionGancho > Time.time)
-            {
-
-                float x;
-                if (transform.position.x < posFinGancho.x)
-                {
-                    x = (this.transform.position.x - posFinGancho.x) * (Time.time / (tiempoGancho + duracionGancho));
-                }
-                else
-                {
-                    x = (posFinGancho.x - this.transform.position.x) * (Time.time / (tiempoGancho + duracionGancho));
-                }
-                float y = (posFinGancho.y - transform.position.y) * (Time.time / (tiempoGancho + duracionGancho));
-                //print((Time.time / (tiempoGancho + duracionGancho))+"% y el gancho va por "+x+","+y);
-                GetComponent<LineRenderer>().SetPosition(0, new Vector3(this.transform.position.x, this.transform.position.y + 20, this.transform.position.z));
-
-                if (transform.position.x > posFinGancho.x)
-                    GetComponent<LineRenderer>().SetPosition(1, new Vector3(this.transform.position.x + x, this.transform.position.y + y, transform.position.z));
-                else
-                    GetComponent<LineRenderer>().SetPosition(1, new Vector3(this.transform.position.x - x, this.transform.position.y + y, transform.position.z));
-
-
-            }
-            else
-            {
-                print("usandoObjeto es falso");
-                usandoObjeto = false;
-                //print ("El gancho acaba su viaje");
-            }
-
-
-        }
-
-    }
-     **/
 
     public void addReward(ObjetoRecompensa.tipoRecompensa recompensa)
     {

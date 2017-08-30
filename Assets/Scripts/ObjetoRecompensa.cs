@@ -28,7 +28,7 @@ public class ObjetoRecompensa : ClaseObjeto
         collider = this.GetComponent<BoxCollider>();
         rotationSpeed = 1;
         percentage = 0;
-        transform.Rotate(new Vector3(0, 0, 1), 90);
+        transform.Rotate(new Vector3(1, 0, 0), 270);
         signPercentage = 1;
         minHeight = transform.position.y;
         heightMovement = 1.5f;
@@ -44,14 +44,14 @@ public class ObjetoRecompensa : ClaseObjeto
                     transform.GetChild(i).gameObject.SetActive(value);
                 }
                 break;
-            case tipoRecompensa.armas:
+            case tipoRecompensa.piezasSecretas:
                 for (int i = 0; i < transform.childCount; i++)
                 {
                     value = i == 1 ? true : false;
                     transform.GetChild(i).gameObject.SetActive(value);
                 }
                 break;
-            case tipoRecompensa.piezasSecretas:
+            case tipoRecompensa.armas:
                 for (int i = 0; i < transform.childCount; i++)
                 {
                     value = i == 2 ? true : false;
@@ -65,7 +65,7 @@ public class ObjetoRecompensa : ClaseObjeto
     // Update is called once per frame
     void Update()
     {
-        transform.Rotate(new Vector3(1, 0, 0), rotationSpeed);
+        transform.Rotate(new Vector3(0, 0, 1), rotationSpeed);
         transform.position = new Vector3(transform.position.x, minHeight + percentage * heightMovement, transform.position.z);
         percentage = percentage + verticalSpeed * signPercentage;
         if (percentage > heightMovement || percentage < -heightMovement)

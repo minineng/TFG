@@ -2,77 +2,99 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ScriptPuerta : ClaseObjeto {
+public class ScriptPuerta : ClaseObjeto
+{
 
-	public bool cerrado;
-
-
-	// Use this for initialization
-	void Start () {
-		cerrado = true;
-		//print ("El estilo de esta puerta es "+estilo);
-
-		switch(estilo){
-		case RoomController.listaEstilos.casaNormal:
-			//print ("Puerta estilo japones");
-			this.transform.GetChild (0).gameObject.SetActive (true);
-			anim = this.transform.GetChild(0).GetComponent<Animator> ();
-			break;
-		case RoomController.listaEstilos.oficina:
-			//print (this.gameObject.name + " nivel: " + level);
-
-			int aux = 0;
-			switch (level) {
-			case 1:
-				aux = 1;
-				break;
-			case 2:
-				aux = Random.Range (1, 3);
-				break;
-			case 3:
-				aux = Random.Range (1, 4);
-				break;
-			case 4:
-				aux = Random.Range (2, 5);
-				break;
-			case 5:
-				aux = Random.Range (3, 5);
-				break;
-			case 6:
-				aux = 4;
-				break;
-			default:
-				aux = 1;
-				break;
-			}
-			level = aux;
-			//this.transform.name = "Puerta nivel " + aux;
+    public bool cerrado;
+    private BoxCollider colisionPuerta;
+    public bool isExit;
 
 
-			this.transform.GetChild (level).gameObject.SetActive (true);
-			anim = this.transform.GetChild(level).GetComponent<Animator> ();
-			this.transform.GetChild (5).gameObject.SetActive (true);
-			break;
-		}
+    // Use this for initialization
+    void Start()
+    {
+        cerrado = true;
+        //print ("El estilo de esta puerta es "+estilo);
+
+        if (transform.name == "Puerta Izquierda" && GetComponentInParent<RoomController>().id == 0)
+            isExit = true;
+        else
+            isExit = false;
+
+        switch (estilo)
+        {
+            case RoomController.listaEstilos.casaNormal:
+                //print ("Puerta estilo japones");
+                this.transform.GetChild(0).gameObject.SetActive(true);
+                anim = this.transform.GetChild(0).GetComponent<Animator>();
+                break;
+            case RoomController.listaEstilos.oficina:
+                //print (this.gameObject.name + " nivel: " + level);
+
+                int aux = 0;
+                switch (level)
+                {
+                    case 1:
+                        aux = 1;
+                        break;
+                    case 2:
+                        aux = Random.Range(1, 3);
+                        break;
+                    case 3:
+                        aux = Random.Range(1, 4);
+                        break;
+                    case 4:
+                        aux = Random.Range(2, 5);
+                        break;
+                    case 5:
+                        aux = Random.Range(3, 5);
+                        break;
+                    case 6:
+                        aux = 4;
+                        break;
+                    default:
+                        aux = 1;
+                        break;
+                }
+                level = aux;
+                //this.transform.name = "Puerta nivel " + aux;
 
 
-	}
-	
-	// Update is called once per frame
-	void Update () {
+                this.transform.GetChild(level).gameObject.SetActive(true);
+                colisionPuerta = this.transform.GetChild(level).GetChild(1).GetComponent<BoxCollider>();
+                anim = this.transform.GetChild(level).GetComponent<Animator>();
+                this.transform.GetChild(5).gameObject.SetActive(true);
+                break;
+        }
 
-	}
-		
 
-	public void usar(){
-		if (cerrado) {
-			anim.Play ("Abrir");
-			cerrado = false;
-		} else {
-			anim.Play ("Cerrar");
-			cerrado = true;
-		}
-	}
-		
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+
+    }
+
+
+    public void usar()
+    {
+        if (!isExit)
+        {
+            if (cerrado)
+            {
+                colisionPuerta.enabled = false;
+                anim.Play("Abrir");
+                cerrado = false;
+            }
+            else
+            {
+                colisionPuerta.enabled = true;
+                anim.Play("Cerrar");
+                cerrado = true;
+            }
+        }
+    }
+
 
 }

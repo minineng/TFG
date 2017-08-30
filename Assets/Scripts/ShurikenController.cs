@@ -38,10 +38,10 @@ public class ShurikenController : ObjetoUso
         {
             print("Te quito vida");
         }
-        else if(other.tag != "Player" && other.tag != "Mira" && other.tag != "Untagged" && other.tag != "Recompensa")
+        /*else if(other.tag != "Player" && other.tag != "Mira" && other.tag != "Untagged" && other.tag != "Recompensa")
         {
             print("Choco con "+other.tag);
             Destroy(this.gameObject);
-        }
+        }*/
     }
 }
