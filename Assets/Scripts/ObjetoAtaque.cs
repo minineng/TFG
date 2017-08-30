@@ -5,7 +5,7 @@ using UnityEngine;
 public class ObjetoAtaque : ClaseObjeto {
 
 	protected float velocidadActivacion;
-
+    public bool setAlarm;
 
 	void ObjetoActivado (){}
 

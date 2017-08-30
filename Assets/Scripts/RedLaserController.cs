@@ -32,27 +32,27 @@ public class RedLaserController : ObjetoAtaque {
         {
             case 1:
                 maxHeight = 7.15f;
-                correcionColision = 23f;
+                correcionColision = 3f;
                 break;
             case 2:
                 maxHeight = 6.9f;
-                correcionColision = 24f;
+                correcionColision = 4f;
                 break;
             case 3:
                 maxHeight = 6.7f;
-                correcionColision = 25.5f;
+                correcionColision = 5.5f;
                 break;
             case 4:
                 maxHeight = 6.4f;
-                correcionColision = 26.8f;
+                correcionColision = 6.8f;
                 break;
             case 5:
                 maxHeight = 6.2f;
-                correcionColision = 28.8f;
+                correcionColision = 8.8f;
                 break;
             case 6:
                 maxHeight = 5.9f;
-                correcionColision = 31f;
+                correcionColision = 11f;
                 break;
             default:
                 maxHeight = 5f;
@@ -108,13 +108,18 @@ public class RedLaserController : ObjetoAtaque {
         else if(laseresMoviles.transform.position.y < minHeight)
             signPercentage = 1;
 
-        colision.center = new Vector3(colision.center.x, laseresMoviles.transform.position.y + correcionColision, colision.center.z);
+        colision.center = new Vector3(colision.center.x, laseresMoviles.transform.localPosition.y + correcionColision, colision.center.z);
+
+        if (conjuntoLaser.Count == 0)
+            print("falla algo");
 
         for (int i = 0; i < conjuntoLaser.Count; i++)
         {
             conjuntoLaser[i].line.SetPosition(0, conjuntoLaser[i].pos0.position);
             conjuntoLaser[i].line.SetPosition(1, conjuntoLaser[i].pos1.position);
         }
+        //if(setAlarm)
+
     }
 
     private void OnTriggerEnter(Collider other)
@@ -123,6 +128,7 @@ public class RedLaserController : ObjetoAtaque {
         {
             print("Toco al jugador");
             other.GetComponent<PlayerController>().restarVida(damage);
+            setAlarm = true;
         }
             
     }

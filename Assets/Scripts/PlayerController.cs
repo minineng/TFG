@@ -37,17 +37,19 @@ public class PlayerController : MonoBehaviour
     };
 
     private estadosMovimiento movimiento;
+    public bool detected;
+    private float detectedTime;
 
     private int shurikenCount;
     private float shurikenRecoveryTime;
     private bool recoveringShuriken;
     private float TimeNextShuriken;
+    private bool rolling;
     public float rollingDistance;
-    public bool rolling;
-    public float rollingTime;
-    public float rollingActualTime;
-    public float rollingInitialPosition;
-    public float rollingFinalPosition;
+    private float rollingTime;
+    private float rollingActualTime;
+    private float rollingInitialPosition;
+    private float rollingFinalPosition;
 
 
     public List<ObjetoRecompensa.tipoRecompensa> missionRewards;
@@ -94,6 +96,8 @@ public class PlayerController : MonoBehaviour
     // Use this for initialization
     void Start()
     {
+        detected = false;
+        detectedTime = -1;
         movimiento = estadosMovimiento.parado;
         if (transform.parent != null)
         {
@@ -164,6 +168,14 @@ public class PlayerController : MonoBehaviour
                 break;
             case 0://normal
                 updateControl();
+
+                if (detected && detectedTime < Time.time)
+                {
+                    detectedTime = -1;
+                    detected = false;
+                }
+
+
                 break;
 
         }
@@ -171,6 +183,12 @@ public class PlayerController : MonoBehaviour
         elementosAnim();
 
     }
+    public void startDetection()
+    {
+        detected = true;
+        detectedTime = Time.time + mapGenControl.timeToForgetPlayer;
+    }
+
 
     private void updateControl()
     {
@@ -349,7 +367,7 @@ public class PlayerController : MonoBehaviour
 
     public void elementosUI()
     {
-        canvas.transform.Find("CanvasElementosBasicos").Find("TextoVida").GetComponent<Text>().text = "Salud: " + vida;
+        canvas.transform.Find("CanvasElementosBasicos").Find("TextoVida").GetComponent<Text>().text = "Velocidad " + controller.velocity;
 
         switch (objetoEquipado)
         {
@@ -387,9 +405,7 @@ public class PlayerController : MonoBehaviour
         else
             canvas.transform.Find("CanvasRecompensasMision").Find("Armas").gameObject.SetActive(false);
 
-
-
-
+        canvas.transform.Find("DetectedText").gameObject.SetActive(detected);
 
     }
 

@@ -21,6 +21,7 @@ public class MapGenController : MonoBehaviour
     private List<estructuraPisos> listaPisos;
     public List<condicionesVictoria> objetivosMision;
     public int[,] matrizHabitaciones;
+    public float timeToForgetPlayer;
 
     private List<GameObject> roomList;
 
@@ -64,6 +65,8 @@ public class MapGenController : MonoBehaviour
     // Use this for initialization
     void Start()
     {
+
+        timeToForgetPlayer = dificultad * 2;
         cantHabitacionesTotal = 0;
         if(objetivosMision.Count == 0)
             objetivosMision = new List<condicionesVictoria>();
@@ -84,11 +87,15 @@ public class MapGenController : MonoBehaviour
         //printListaHab ();
         //lecDif ();
 
-
-        for (int i = 0; i < listaPisos.Count; i++)
+        /*for(int j = 0; j < cantHabitacionesTotal; j++)
         {
-            //print ("Piso "+i+" - Escalera -> "+listaPisos[i].escaleraEn);
-        }
+            print("Hola");
+            //transform.GetChild(j).GetComponent<RoomController>().bakeNavMesh();
+
+
+
+
+        }*/
 
     }
 

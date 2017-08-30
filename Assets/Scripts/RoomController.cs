@@ -19,6 +19,7 @@ public class RoomController : MonoBehaviour
     public bool canHaveLadder;
     public int ladderPosition;
     public int ladderReceived;
+    public int cameraPosition;
 
     public GameObject generadorPrefab;
     public GameObject generadorDecoradoPrefab;
@@ -32,17 +33,20 @@ public class RoomController : MonoBehaviour
     private Vector3 limiteDerecho;
     public GameObject mapGenController;
     private float altTecho;
-    
 
     private GameObject suelo;
     private GameObject techo;
     private GameObject spawner;
 
+    public NavMeshSurface navMesh;
+
     public roomSize tamanyo;
     public listaEstilos estilo;
     public tipo tipoHabitacion;
+    public bool alarmTriggered;
 
-    public List<GameObject> generadoresDecorado;
+    private List<GameObject> generadoresDecorado;
+
 
     public static float T_HAB = 202f;
 
@@ -89,7 +93,7 @@ public class RoomController : MonoBehaviour
 
     public void Start()
     {
-
+        alarmTriggered = false;
         altTecho = 66.5f;
         limiteIzquierdo = new Vector3();
         limiteDerecho = new Vector3();
@@ -110,6 +114,8 @@ public class RoomController : MonoBehaviour
             spawner.SetActive(false);
 
         rellenarSala();
+        navMesh = transform.Find("ParedSuelo").GetComponent<NavMeshSurface>();
+        //navMesh.Bake();
     }
 
     private void initListaLaterales()
@@ -260,42 +266,54 @@ public class RoomController : MonoBehaviour
             }
         }
 
-
         disposicionDecorados();
         disposicionGeneradoresPuertas();
         disposicionGeneradoresObjetos();
         disposicionGeneradoresSitiosOcultos();
-
-        //print ("hay "+generadoresDecorado.Count+ " generadores en esta habitacion");
+        disposicionCamaras();
 
     }
+
 
     private void disposicionGeneradoresObjetos()
     {
 
         int aux = 0;
+        int auxCamera = 0;
         switch (dificultad)
         {
             case 1:
                 aux = Random.Range(0, 2);
+                auxCamera = Random.Range(0, 2);
                 break;
             case 2:
                 aux = 1;
+                auxCamera = Random.Range(0, 2);
                 break;
             case 3:
                 aux = Random.Range(1, 3);
+                auxCamera = Random.Range(0, 3);
                 break;
             case 4:
                 aux = 2;
+                auxCamera = Random.Range(0, 3);
                 break;
             case 5:
                 aux = Random.Range(2, 4);
+                auxCamera = Random.Range(1, 3);
                 break;
             case 6:
                 aux = 3;
+                auxCamera = Random.Range(1, 3);
                 break;
-
         }
+
+        if (auxCamera == 1)
+            cameraPosition = Random.Range(auxCamera, 3);
+        else if (auxCamera == 2)
+            cameraPosition = 3;
+
+        //print("Saco " + auxCamera + " camaras");
         //print ("El numero de trampas es " + aux);
         aux++;
         if (aux > 0)
@@ -339,6 +357,65 @@ public class RoomController : MonoBehaviour
         }
     }
 
+    private void disposicionCamaras()
+    {
+        if (cameraPosition > 0)
+        {
+            GameObject cameraPrefab = Resources.Load("Prefabs/Camara", typeof(GameObject)) as GameObject;
+
+            float corIzq, corDer;
+
+            corIzq = corDer = 0;
+
+            if (listaLaterales[0] == tiposParedes.nada)
+                corIzq = -5;
+            if (listaLaterales[1] == tiposParedes.nada)
+                corDer = 4;
+
+            Vector3 posIzq = new Vector3(limiteIzquierdo.x + 4 + corIzq, limiteIzquierdo.y + 57.5f, limiteIzquierdo.z);
+            Vector3 posDer = new Vector3(limiteIzquierdo.x + tHab - 10 + corDer, limiteIzquierdo.y + 57.5f, limiteIzquierdo.z);
+
+            switch (cameraPosition)
+            {
+                case 1:
+                    {
+                        GameObject cameraObject = Instantiate(cameraPrefab, posIzq, Quaternion.identity, this.transform);
+                        cameraObject.name = "Camara Izq";
+                        cameraObject.GetComponent<ScriptCamara>().apuntaDerecha = true;
+                        cameraObject.GetComponent<ScriptCamara>().level = dificultad;
+                        cameraObject.GetComponent<ScriptCamara>().estilo = estilo;
+                    }
+                    break;
+                case 2:
+                    {
+                        
+                        GameObject cameraObject = Instantiate(cameraPrefab, posDer, Quaternion.identity, this.transform);
+                        cameraObject.name = "Camara Der";
+                        cameraObject.GetComponent<ScriptCamara>().apuntaDerecha = false;
+                        cameraObject.GetComponent<ScriptCamara>().level = dificultad;
+                        cameraObject.GetComponent<ScriptCamara>().estilo = estilo;
+                    }
+                    break;
+                case 3:
+                    {
+                        GameObject cameraObject1 = Instantiate(cameraPrefab, posIzq, Quaternion.identity, this.transform);
+                        cameraObject1.name = "Camara Izq";
+                        cameraObject1.GetComponent<ScriptCamara>().apuntaDerecha = true;
+                        cameraObject1.GetComponent<ScriptCamara>().level = dificultad;
+                        cameraObject1.GetComponent<ScriptCamara>().estilo = estilo;
+
+                        GameObject cameraObject2 = Instantiate(cameraPrefab, posDer, Quaternion.identity, this.transform);
+                        cameraObject2.name = "Camara Der";
+                        cameraObject2.GetComponent<ScriptCamara>().apuntaDerecha = false;
+                        cameraObject2.GetComponent<ScriptCamara>().level = dificultad;
+                        cameraObject2.GetComponent<ScriptCamara>().estilo = estilo;
+                    }
+                    break;
+            }
+        }
+    }
+
+
     private void disposicionGeneradoresSitiosOcultos()
     {
         float percentage = 50 - (dificultad - 1) * 10;
@@ -376,7 +453,7 @@ public class RoomController : MonoBehaviour
 
             while (elements.Count < auxRandElement)
             {
-                int auxPos = Random.Range(1, numeroElementos+1);
+                int auxPos = Random.Range(1, numeroElementos + 1);
 
                 if (!elements.Contains(auxPos))
                 {

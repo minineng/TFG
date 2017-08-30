@@ -12,48 +12,34 @@ public class ScriptMina : ObjetoAtaque {
 		if (damage > 80)
 			damage = 75;
 		habilitado = true;
-		velocidadActivacion = 15;
-	}
-	
-	// Update is called once per frame
-	void Update () {
+		velocidadActivacion = 20;
 	}
 
 	void OnTriggerStay(Collider other)
 	{
-
-		if (habilitado && other.tag == "Player" && other.GetComponent<CharacterController>().velocity.x > velocidadActivacion ){
-			other.GetComponent<PlayerController> ().restarVida (damage);
-			usar ();
-			print ("BOOOM");
-			Destroy (gameObject);
-		}
-
-	}
+        detection(other);
+    }
 
 	void OnTriggerEnter(Collider other)
 	{
-
-		if (habilitado && other.tag == "Player" && other.GetComponent<CharacterController>().velocity.x > velocidadActivacion ){
-			other.GetComponent<PlayerController> ().restarVida (damage);
-			usar ();
-			print ("BOOOM");
-			Destroy (gameObject);
-		}
-
-	}
+        detection(other);
+    }
 
 	void OnTriggerExit(Collider other)
 	{
+        detection(other);
+    }
 
-		if (habilitado && other.tag == "Player" && other.GetComponent<CharacterController>().velocity.x > velocidadActivacion ){
-			other.GetComponent<PlayerController> ().restarVida (damage);
-			usar ();
-			print ("BOOOM");
-			Destroy (gameObject);
-		}
-
-	}
+    void detection(Collider other)
+    {
+        if (habilitado && other.tag == "Player" && other.GetComponent<CharacterController>().velocity.x > velocidadActivacion && other.transform.position.y >= this.transform.position.y)
+        {
+            other.GetComponent<PlayerController>().restarVida(damage);
+            usar();
+            print("BOOOM");
+            Destroy(gameObject);
+        }
+    }
 
 	public void usar(){
 		if (habilitado) {

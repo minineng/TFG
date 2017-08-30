@@ -8,11 +8,13 @@ public class ScriptPuerta : ClaseObjeto
     public bool cerrado;
     private BoxCollider colisionPuerta;
     public bool isExit;
+    public bool hasCamera;
 
 
     // Use this for initialization
     void Start()
     {
+        hasCamera = true;
         cerrado = true;
         //print ("El estilo de esta puerta es "+estilo);
 
@@ -20,6 +22,14 @@ public class ScriptPuerta : ClaseObjeto
             isExit = true;
         else
             isExit = false;
+
+        if (hasCamera)
+        {
+           //Vector3 position = new Vector3(transform.position)
+
+
+
+        }
 
         switch (estilo)
         {

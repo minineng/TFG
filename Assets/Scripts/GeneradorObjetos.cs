@@ -112,7 +112,7 @@ public class GeneradorObjetos : MonoBehaviour
                     break;
                 }
         }
-        print("Genero un "+ newObject);
+        //print("Genero un "+ newObject);
         objeto.transform.SetParent(transform.parent);
         done = true;
         return objeto;
@@ -123,12 +123,12 @@ public class GeneradorObjetos : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //Destroy(this.gameObject);
+        Destroy(this.gameObject);
     }
 
     public static tipo getRandomObject()
     {
-        switch (Random.Range(0, 4))
+        switch (Random.Range(3, 4))
         {
             case 0:
                 return (tipo.Mina);
