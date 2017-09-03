@@ -12,7 +12,7 @@ public class SitioOcultoController : ClaseObjeto {
 
         switch(estilo)
         {
-            case RoomController.listaEstilos.oficina:
+            case Edificio.listaEstilos.oficina:
                 transform.GetChild(auxRandom).gameObject.SetActive(true);
                 break;
             default:

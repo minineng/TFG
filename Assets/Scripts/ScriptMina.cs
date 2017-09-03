@@ -3,19 +3,43 @@ using System.Collections;
 
 public class ScriptMina : ObjetoAtaque {
 	private SphereCollider collider;
+    public Material MaterialMinaActivada;
+    private Material MaterialBase;
 
 	// Use this for initialization
 	void Start () {
+        aturdido = false;
 		collider = GetComponent<SphereCollider>();
-		GetComponent<SphereCollider>().radius = level * 10;
-		damage = (level + 1) * 20;
+		GetComponent<SphereCollider>().radius = level * 7.5f;
+        MaterialBase = GetComponent<MeshRenderer>().material;
+
+        damage = (level + 1) * 20;
 		if (damage > 80)
 			damage = 75;
-		habilitado = true;
+
+        puntos = level * 150;
+		activado = false;
 		velocidadActivacion = 20;
 	}
 
-	void OnTriggerStay(Collider other)
+    private void Update()
+    {
+        pausa = GetComponentInParent<RoomController>().edificio.pausado;
+
+        if (!pausa)
+        {
+            if (aturdido && Time.time > timeAturdido)
+                aturdido = false;
+            if (aturdido || activado)
+                GetComponent<MeshRenderer>().material = MaterialMinaActivada;
+            else if (!activado && !aturdido)
+                GetComponent<MeshRenderer>().material = MaterialBase;
+        }
+    }
+
+
+
+    void OnTriggerStay(Collider other)
 	{
         detection(other);
     }
@@ -32,9 +56,12 @@ public class ScriptMina : ObjetoAtaque {
 
     void detection(Collider other)
     {
-        if (habilitado && other.tag == "Player" && other.GetComponent<CharacterController>().velocity.x > velocidadActivacion && other.transform.position.y >= this.transform.position.y)
+        if (!activado && GetComponentInParent<RoomController>().jugadorEnRoom && !aturdido && other.tag == "Player" && other.GetComponent<CharacterController>().velocity.x > velocidadActivacion && (( other.transform.position.y >= this.transform.position.y && !other.GetComponent<PlayerController>().getModoSigilo()) || (other.transform.position.y >= (this.transform.position.y -6.5f) && other.GetComponent<PlayerController>().getModoSigilo())))
         {
+            print("Ibas a " + other.GetComponent<CharacterController>().velocity.x);
             other.GetComponent<PlayerController>().restarVida(damage);
+            other.GetComponent<PlayerController>().successfulHack();
+            other.GetComponent<PlayerController>().subtractPoints(puntos);
             usar();
             print("BOOOM");
             Destroy(gameObject);
@@ -42,9 +69,9 @@ public class ScriptMina : ObjetoAtaque {
     }
 
 	public void usar(){
-		if (habilitado) {
-			habilitado = false;
-			print ("La mina deja de funcionar");
+		if (!activado) {
+            GetComponent<MeshRenderer>().material = MaterialMinaActivada;
+            activado = true;
 		}
 	}
 

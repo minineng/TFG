@@ -6,6 +6,7 @@ public class ConoVisionController : MonoBehaviour
 {
 
     public bool detectoPlayer;
+    private ScriptCamara camara;
     public bool detectando;
     private float detectionTime;
     private float finishTime;
@@ -14,6 +15,7 @@ public class ConoVisionController : MonoBehaviour
     // Use this for initialization
     void Start()
     {
+        camara = transform.GetComponentInParent<ScriptCamara>();
         detectoPlayer = false;
         detectando = false;
     }
@@ -27,44 +29,39 @@ public class ConoVisionController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
         if (detectando && Time.time > finishTime)
-        {
             detectoPlayer = true;
-        }
         else
-        {
             detectoPlayer = false;
-        }
 
+        if(camara.aturdido && detectando)
+            finishTime = Time.time + detectionTime;
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.tag == "Player" && !other.GetComponent<PlayerController>().hidden && !detectando)
-        {
-            detectando = true;
-            finishTime = Time.time + detectionTime;
-            print("Te empiezo a pillar");
-        }
-        else if (other.tag == "Player" && other.GetComponent<PlayerController>().hidden)
-            detectando = false;
+        detection(other);
     }
-
 
     private void OnTriggerStay(Collider other)
     {
-        if (other.tag == "Player" && !other.GetComponent<PlayerController>().hidden && !detectando)
-        {
-            detectando = true;
-            finishTime = Time.time + detectionTime;
-            print("Te empiezo a pillar");
-        }
-        else if (other.tag == "Player" && other.GetComponent<PlayerController>().hidden)
-            detectando = false;
+        detection(other);
+    }
 
-        if (other.tag == "Player" && detectoPlayer)
-            other.GetComponent<PlayerController>().startDetection();
+    public void detection(Collider other)
+    {
+        if (other.tag == "Player")
+        {
+            if (!other.GetComponent<PlayerController>().hidden && !detectando)
+            {
+                detectando = true;
+                finishTime = Time.time + detectionTime;
+            }
+            else if (other.GetComponent<PlayerController>().hidden)
+                detectando = false;
+            if (detectoPlayer)
+                other.GetComponent<PlayerController>().startDetection();
+        }
     }
 
     private void OnTriggerExit(Collider other)

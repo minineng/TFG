@@ -14,7 +14,7 @@ public class SpawnerController : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		this.gameObject.transform.GetChild (0).gameObject.SetActive (false);//oculto la esfera para situar el generador
-		if (GetComponentInParent<RoomController> ().playerSpawn) {
+		if (GetComponentInParent<RoomController> ().tipoHabitacion == RoomController.tipo.Entrada) {
 			Vector3 posicion = gameObject.transform.position;
 			switch (spawn) {
 			case characters.Player:

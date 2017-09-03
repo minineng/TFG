@@ -5,23 +5,25 @@ using UnityEngine;
 public class ClaseObjeto : MonoBehaviour {
 
 	public int level;
-	public RoomController.listaEstilos estilo;
+	public Edificio.listaEstilos estilo;
 	public bool activado;
 	public bool habilitado;
 	public float damage;
 	public float ruido;
     public bool oculta;
-	public Animator anim;
+    public float puntos;
+    public Animator anim;
+    public bool pausa;
 
-	// Use this for initialization
+    // Use this for initialization
 
-	void Start () {}
-
-
-	// Update is called once per frame
-	void Update () {
-		
-	}
+    public float getPuntos(bool ataque)
+    {
+        if (ataque)
+            return puntos / 2;
+        else
+            return puntos;
+    }
 
 	public void usar(){}
 }

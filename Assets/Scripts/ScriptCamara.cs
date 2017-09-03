@@ -24,6 +24,8 @@ public class ScriptCamara : ObjetoAtaque
     // Use this for initialization
     void Start()
     {
+        pausa = false;
+        aturdido = false;
         ConoVision = transform.Find("CamaraVision").Find("ConoVision").GetComponent<ConoVisionController>();
         CuerpoCamara = transform.Find("CamaraVision").transform;
         currentAngle = 0;
@@ -74,77 +76,50 @@ public class ScriptCamara : ObjetoAtaque
         finishTime = Time.time + turningTime;
     }
 
-    /*
     void Update()
     {
-        setAlarm = ConoVision.jugadorDetectado();
+        pausa = GetComponentInParent<RoomController>().edificio.pausado;
+        if (!aturdido && !pausa) {
+            setAlarm = ConoVision.jugadorDetectado();
 
-        if (!setAlarm && movimiento)
-        {
-            if (auxTime != -1)
+            if (!setAlarm && movimiento)
             {
-                finishTime = Time.time + auxTime;
-                auxTime = -1;
-            }
+                if (auxTime != -1)
+                {
+                    finishTime = Time.time + auxTime;
+                    auxTime = -1;
+                }
 
-            float percentage;
-            if (angleSign == -1)
-                percentage = (finishTime - Time.time) / turningTime;
+                float percentage;
+                if (angleSign == -1)
+                    percentage = (finishTime - Time.time) / turningTime;
+                else
+                    percentage = 1 - (finishTime - Time.time) / turningTime;
+
+                currentAngle = Mathf.Lerp(minAngleRotation, maxAngleRotation, percentage);
+
+                if (Time.time > finishTime)
+                {
+                    finishTime = Time.time + turningTime;
+                    angleSign *= -1;
+                }
+                CuerpoCamara.eulerAngles = new Vector3(rotCamaraInicial.x, rotCamaraInicial.y, minAngleRotation + currentAngle);
+            }
             else
-                percentage = 1 - (finishTime - Time.time) / turningTime;
-
-            currentAngle = Mathf.Lerp(minAngleRotation, maxAngleRotation, percentage);
-
-            if (Time.time > finishTime)
             {
-                finishTime = Time.time + turningTime;
-                angleSign *= -1;
+                if (auxTime == -1)
+                    auxTime = finishTime - Time.time;
             }
-
-            if(!apuntaDerecha)
-                CuerpoCamara.rotation = new Quaternion(rotCamaraInicial.x, rotCamaraInicial.y, minAngleRotation + currentAngle, rotCamaraInicial.w);
-            else
-                CuerpoCamara.rotation = new Quaternion(rotCamaraInicial.x, minAngleRotation + currentAngle, rotCamaraInicial.z, rotCamaraInicial.w);
-        }
-        else
-        {
-            if(auxTime == -1)
-                auxTime = finishTime - Time.time;
-        }
-    }*/
-
-    void Update()
-    {
-        setAlarm = ConoVision.jugadorDetectado();
-
-        if (!setAlarm && movimiento)
-        {
-            if (auxTime != -1)
-            {
-                finishTime = Time.time + auxTime;
-                auxTime = -1;
-            }
-
-            float percentage;
-            if (angleSign == -1)
-                percentage = (finishTime - Time.time) / turningTime;
-            else
-                percentage = 1 - (finishTime - Time.time) / turningTime;
-
-            currentAngle = Mathf.Lerp(minAngleRotation, maxAngleRotation, percentage);
-
-            if (Time.time > finishTime)
-            {
-                finishTime = Time.time + turningTime;
-                angleSign *= -1;
-            }
-            CuerpoCamara.eulerAngles = new Vector3(rotCamaraInicial.x, rotCamaraInicial.y, minAngleRotation + currentAngle);
         }
         else
         {
             if (auxTime == -1)
                 auxTime = finishTime - Time.time;
+            if (Time.time > timeAturdido)
+                aturdido = false;
         }
+
     }
+
 
 }

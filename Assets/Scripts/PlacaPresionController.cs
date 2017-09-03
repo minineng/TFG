@@ -6,44 +6,60 @@ public class PlacaPresionController : ObjetoAtaque
 {
 
     public BoxCollider colision;
+    private float tiempoHastaAlarma;
+    private bool pulsando;
 
     // Use this for initialization
     void Start()
     {
+        activado = false;
+        pulsando = false;
+        velocidadActivacion = 2.4f / (float)level;
         colision = GetComponent<BoxCollider>();
         damage = 0;
         ruido = 20;
-
-        if (level >= 2)
-        {
-            transform.GetChild(0).gameObject.SetActive(false);
-            transform.GetChild(1).gameObject.SetActive(false);
-        }
 
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.tag == "Player")
-        {
-            detectoJugador();
-            anim.Play("Pisado");
-        }
-
+        detection(other);
     }
 
+    private void OnTriggerStay(Collider other)
+    {
+        detection(other);
+    }
+
+    private void detection(Collider other)
+    {
+        if (other.tag == "Player")
+        {
+            if (!activado)
+            {
+                tiempoHastaAlarma = velocidadActivacion + Time.time;
+                activado = true;
+                anim.Play("Pisado");
+            }
+            else
+            {
+                if (tiempoHastaAlarma < Time.time && !pulsando)
+                {
+                    pulsando = true;
+                    other.GetComponent<PlayerController>().startDetection();
+                }
+            }
+        }
+    }
     private void OnTriggerExit(Collider other)
     {
         if (other.tag == "Player")
         {
-            detectoJugador();
+            activado = false;
+            pulsando = false;
             anim.Play("Levantado");
         }
 
     }
 
-    private void detectoJugador()
-    {
-        print("Te detecto");
-    }
 }

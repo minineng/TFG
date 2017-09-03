@@ -24,6 +24,7 @@ public class PlayerController : MonoBehaviour
     Vector3 intialPosition;
     Vector3 finalPosition;
     int contGancho;
+    bool levelFinished;
 
     public bool enSitioOculto;
     public bool hidden;
@@ -44,8 +45,10 @@ public class PlayerController : MonoBehaviour
     private float shurikenRecoveryTime;
     private bool recoveringShuriken;
     private float TimeNextShuriken;
+
     private bool rolling;
-    public float rollingDistance;
+    private float rollingDistance;
+    private float rollingStep;
     private float rollingTime;
     private float rollingActualTime;
     private float rollingInitialPosition;
@@ -53,7 +56,7 @@ public class PlayerController : MonoBehaviour
 
 
     public List<ObjetoRecompensa.tipoRecompensa> missionRewards;
-    public MapGenController mapGenControl;
+    public Edificio Edificio;
 
     public float velocidad;
     public float multiplicadorBase;
@@ -71,13 +74,18 @@ public class PlayerController : MonoBehaviour
     private bool usandoObjeto;
     private GameObject shurikenPrefab;
     private GameObject gancho;
-
     private Vector3 moveDirection;
     private bool modoSigilo;
     private float modoSigiloHeight;
     private float normalHeight;
-    private GameObject canvas;
+    //private GameObject canvas;
+    private CanvasController canvas;
     private GameObject mira;
+    public float points;
+    private float secDetected;
+    private float pointsPerDetection;
+    public int trapCount;
+    public bool pausado;
 
 
     public enum objetosUso
@@ -88,41 +96,55 @@ public class PlayerController : MonoBehaviour
 
     }
 
-
-
     //public ObjetoRecompensa.tipoRecompensa = 
 
 
     // Use this for initialization
     void Start()
     {
+        gancho = transform.Find("Gadgets").Find("Gancho").gameObject;
+        rigidBody = GetComponent<Rigidbody>();
+        anim = GetComponent<Animator>();
+        controller = GetComponent<CharacterController>();
+        shurikenPrefab = Resources.Load("Prefabs/Shuriken", typeof(GameObject)) as GameObject;
+        canvas = transform.Find("Canvas").GetComponent<CanvasController>();
+        mira = transform.Find("PuntoMira").gameObject;
+
+        missionRewards = new List<ObjetoRecompensa.tipoRecompensa>();
+
+        levelFinished = false;
+        points = 0;
         detected = false;
         detectedTime = -1;
+        secDetected = 0;
         movimiento = estadosMovimiento.parado;
         if (transform.parent != null)
         {
-            transform.parent.GetComponent<MapGenController>().player = this.gameObject;
-            mapGenControl = transform.parent.GetComponent<MapGenController>();
+            transform.parent.GetComponent<Edificio>().player = this.gameObject;
+            Edificio = transform.parent.GetComponent<Edificio>();
+            canvas.addCondicionVictoria(Edificio.objetivosMision);
+            pointsPerDetection = Edificio.dificultad * 0.5f;
+
         }
+        trapCount = Edificio.cantTrampasHackeablesTotal;
+        canvas.updateTrapCount(trapCount);
         hidden = false;
         enSitioOculto = false;
-        gancho = transform.Find("Gadgets").Find("Gancho").gameObject;
+
         tiempoVueloGancho = 0.5f;
         recoveringShuriken = false;
         usandoObjeto = false;
         lanzado = false;
         pulsado = false;
         rollingDistance = 10;
-        rollingTime = 1.3f;
+        rollingTime = 1f;
+        rollingStep = 1;
         modoSigiloHeight = 2.53f;
         normalHeight = 3.96f;
-        shurikenRecoveryTime = 1.5f;
+        shurikenRecoveryTime = 10f;
         objetoEquipado = 0;
         distMaximaMira = 75;
         estado = 0;
-        rigidBody = GetComponent<Rigidbody>();
-        anim = GetComponent<Animator>();
-        controller = GetComponent<CharacterController>();
         velocidad = 60;
         rolling = false;
         multiplicadorBase = 1;
@@ -138,192 +160,230 @@ public class PlayerController : MonoBehaviour
         moveDirection = Vector3.zero;
         modoSigilo = false;
         shurikenCount = 2;
-
-        missionRewards = new List<ObjetoRecompensa.tipoRecompensa>();
-        shurikenPrefab = Resources.Load("Prefabs/Shuriken", typeof(GameObject)) as GameObject;
-
-        canvas = transform.Find("Canvas").gameObject;
-        mira = transform.Find("PuntoMira").gameObject;
-
     }
 
     // Update is called once per frame
     void Update()
     {
-
-        if (vida <= 0 && estado != -1) // muerte
-            estado = -1;
-
-        switch (estado)
+        if (!levelFinished)
         {
-            case -3://subiendo escalera
-                print("ESTOY EN EL ESTADO 3");
-                break;
-            case -2://aturdido
-                if (Time.time > tiempoAturdido)
-                    estado = 0;
-                break;
-            case -1://muerto
-                print("Has muerto");
-                break;
-            case 0://normal
-                updateControl();
+            if (vida <= 0 && estado != -1) // muerte
+                estado = -1;
 
-                if (detected && detectedTime < Time.time)
-                {
-                    detectedTime = -1;
-                    detected = false;
-                }
+            switch (estado)
+            {
+                case -3://subiendo escalera
+                    print("ESTOY EN EL ESTADO 3");
+                    break;
+                case -2://aturdido
+                    if (Time.time > tiempoAturdido)
+                        estado = 0;
+                    break;
+                case -1://muerto
+                    print("Has muerto");
+                    endLevel();
+                    break;
+                case 0://normal
+                    updateControl();
 
+                    if (detected)
+                    {
 
-                break;
+                        if (detectedTime < Time.time)
+                        {
+                            detectedTime = -1;
+                            canvas.updateDetected(false);
+                            detected = false;
+                        }
+                        else if (detectedTime > Time.time && secDetected < Time.time)
+                        {
+                            secDetected = Time.time + 1;
+                            print("Salto");
+                            subtractPoints(pointsPerDetection);
+                        }
 
+                    }
+
+                    break;
+
+            }
+            elementosUI();
+            elementosAnim();
         }
-        elementosUI();
-        elementosAnim();
-
     }
+
+    public void pausar()
+    {
+        if (!pausado)
+        {
+            print("Pauso");
+            pausado = true;
+            canvas.transform.Find("CanvasMenu").GetComponent<IngameMenuController>().setEstado(1);
+            Time.timeScale = 0;
+        }
+        else
+        {
+            print("Despauso");
+            pausado = false;
+            canvas.transform.Find("CanvasMenu").GetComponent<IngameMenuController>().setEstado(0);
+            Time.timeScale = 1;
+        }
+
+        Edificio.setPausa(pausado);
+    }
+
+    public void successfulHack()
+    {
+        trapCount--;
+        canvas.updateTrapCount(trapCount);
+    }
+
     public void startDetection()
     {
-        detected = true;
-        detectedTime = Time.time + mapGenControl.timeToForgetPlayer;
+        if (!detected)
+        {
+            secDetected = Time.time + 1;
+            detected = true;
+            canvas.updateDetected(true);
+            detectedTime = Time.time + Edificio.timeToForgetPlayer;
+        }
     }
-
 
     private void updateControl()
     {
-        if (Input.GetAxis("ChangeObject") > 0 && !pulsado && !usandoObjeto)
+        if (Input.GetButtonDown("Start"))
         {
-            pulsado = true;
-            objetoEquipado++;
-            if (objetoEquipado > 2)
-                objetoEquipado = 0;
+            pausar();
         }
-        if (Input.GetAxis("ChangeObject") < 0 && !pulsado && !usandoObjeto)
-        {
-            pulsado = true;
-            objetoEquipado--;
-            if (objetoEquipado < 0)
-                objetoEquipado = 2;
-        }
-
-        if (Input.GetAxis("ChangeObject") == 0)
-            pulsado = false;
-
-        controlMira();
-        usoObjeto();
-
-        float moveH = Input.GetAxis("Horizontal");
-        float moveV = Input.GetAxis("Vertical");
-
-        if (controller.isGrounded)
-        {
-            if (cambioProfundidad)
-            {
-                moveDirection = new Vector3(moveH, 0, moveV);
-
-            }
-            else
-            {
-                moveDirection = new Vector3(moveH, 0, 0);
-            }
-            moveDirection *= velocidad * multiplicadorBase;
-
-            if ((moveH > 0 && controller.velocity.x > 0) || (moveH < 0 && controller.velocity.x < 0))
-                movimiento = estadosMovimiento.moviendose;
-            else if ((moveH > 0 && controller.velocity.x < 0) || (moveH < 0 && controller.velocity.x > 0))
-            {
-                movimiento = estadosMovimiento.cambiandoDeDireccion;
-            }
-            else if (moveH == 0 && controller.velocity.x != 0)
-                movimiento = estadosMovimiento.frenando;
-            else if (moveH == 0 && controller.velocity.x == 0)
-                movimiento = estadosMovimiento.parado;
-
-            //print("Estoy "+movimiento);
-
-        }
-
-        if (enSitioOculto && modoSigilo)
-        {
-            hidden = true;
-            //print("ERES INVISIBLE");
-        }
-        else
-            hidden = false;
-
-        moveDirection.y -= gravity * Time.deltaTime;
-        controller.Move(moveDirection * Time.deltaTime);
-
-        if (!rolling)
+        if (!pausado)
         {
 
-            if (moveH < 0 && facingRight)
+            if (Input.GetAxis("ChangeObject") > 0 && !pulsado && !usandoObjeto)
             {
-                //facingRight = false;
-                swap();
+                pulsado = true;
+                objetoEquipado++;
+                if (objetoEquipado > 2)
+                    objetoEquipado = 0;
+                canvas.changeObjetoEquipado(objetoEquipado);
             }
-            if (moveH > 0 && !facingRight)
+            if (Input.GetAxis("ChangeObject") < 0 && !pulsado && !usandoObjeto)
             {
-                //facingRight = true;
-                swap();
+                pulsado = true;
+                objetoEquipado--;
+                if (objetoEquipado < 0)
+                    objetoEquipado = 2;
+                canvas.changeObjetoEquipado(objetoEquipado);
             }
-        }
 
-        if (Input.GetButtonDown("Run"))
-        {
-            if (!modoSigilo)
+            if (Input.GetAxis("ChangeObject") == 0)
+                pulsado = false;
+
+            controlMira();
+            usoObjeto();
+
+            float moveH = Input.GetAxis("Horizontal");
+            float moveV = Input.GetAxis("Vertical");
+
+            if (controller.isGrounded && !usandoObjeto)
             {
-                multiplicadorBase = multiplicadorCorrer;
-                anim.speed = 1.5f;
-            }
-            else
-            {
-                if (!rolling)
+                if (cambioProfundidad)
                 {
-                    print("EMPIEZO");
-                    rolling = true;
-                    rollingInitialPosition = transform.position.x;
+                    moveDirection = new Vector3(moveH, 0, moveV);
+
+                }
+                else
+                {
+                    moveDirection = new Vector3(moveH, 0, 0);
+                }
+                moveDirection *= velocidad * multiplicadorBase;
+
+                if ((moveH > 0 && controller.velocity.x > 0) || (moveH < 0 && controller.velocity.x < 0))
+                    movimiento = estadosMovimiento.moviendose;
+                else if ((moveH > 0 && controller.velocity.x < 0) || (moveH < 0 && controller.velocity.x > 0))
+                {
+                    movimiento = estadosMovimiento.cambiandoDeDireccion;
+                }
+                else if (moveH == 0 && controller.velocity.x != 0)
+                    movimiento = estadosMovimiento.frenando;
+                else if (moveH == 0 && controller.velocity.x == 0)
+                    movimiento = estadosMovimiento.parado;
+
+                //print("Estoy "+movimiento);
+
+            }
+
+            if (enSitioOculto && modoSigilo)
+            {
+                hidden = true;
+                //print("ERES INVISIBLE");
+            }
+            else
+                hidden = false;
+
+            moveDirection.y -= gravity * Time.deltaTime;
+            controller.Move(moveDirection * Time.deltaTime);
+
+            if (!rolling && !usandoObjeto)
+            {
+
+                if (moveH < 0 && facingRight)
+                    swap();
+                if (moveH > 0 && !facingRight)
+                    swap();
+            }
+
+            if (Input.GetButtonDown("Run"))
+            {
+                if (!modoSigilo)
+                {
+                    multiplicadorBase = multiplicadorCorrer;
+                    anim.speed = 1.5f;
+                }
+                else
+                {
+                    if (!rolling)
+                    {
+                        print("EMPIEZO");
+                        rolling = true;
+                        rollingInitialPosition = transform.position.x;
 
 
 
-                    if (facingRight)
-                        rollingFinalPosition = rollingInitialPosition + rollingDistance;
-                    else
-                        rollingFinalPosition = rollingInitialPosition - rollingDistance;
+                        if (facingRight)
+                            rollingFinalPosition = rollingInitialPosition + rollingDistance;
+                        else
+                            rollingFinalPosition = rollingInitialPosition - rollingDistance;
 
-                    rollingActualTime = Time.time + rollingTime;
-                    anim.Play("Roll");
+                        rollingActualTime = Time.time + rollingTime;
+                        anim.Play("Roll");
+                    }
                 }
             }
-        }
-        else if (Input.GetButtonUp("Run"))
-        {
-            if (!modoSigilo)
+            else if (Input.GetButtonUp("Run"))
             {
-                multiplicadorBase = 1;
-                anim.speed = 1;
+                if (!modoSigilo)
+                {
+                    multiplicadorBase = 1;
+                    anim.speed = 1;
+                }
+            }
+
+            rollingController();
+
+            if (controller.isGrounded && Input.GetButtonDown("Jump"))
+                jump();
+
+            ganchoUso();
+
+            if (Input.GetButtonDown("ModoSigilo") && !modoSigilo)
+            {
+                setModoSigilo(true);
+            }
+            else if (Input.GetButtonDown("ModoSigilo") && modoSigilo && !rolling)
+            {
+                setModoSigilo(false);
             }
         }
-
-        rollingController();
-
-        if (controller.isGrounded && Input.GetButtonDown("Jump"))
-            jump();
-
-        ganchoUso();
-
-        if (Input.GetButtonDown("ModoSigilo") && !modoSigilo)
-        {
-            print("Modo sigilo: ON");
-            setModoSigilo(true);
-        }
-        else if (Input.GetButtonDown("ModoSigilo") && modoSigilo)
-        {
-            print("Modo sigilo: OFF");
-            setModoSigilo(false);
-        }
-
 
     }
 
@@ -332,21 +392,18 @@ public class PlayerController : MonoBehaviour
         if (rolling)
         {
 
-            float percentage = rollingTime - (rollingActualTime - Time.time);
-            percentage *= 1.5f;
-            //print(rollingActualTime +" - " + Time.time + " / " + rollingTime +" -> " +percentage);
             if (rollingActualTime > Time.time)
             {
+                float auxMov = rollingStep;
                 if (!facingRight)
-                    percentage *= -1;
-                controller.Move(new Vector3(percentage, 0, 0));
+                    auxMov *= -1;
+                controller.Move(new Vector3(auxMov, 0, 0));
             }
             else
             {
                 rolling = false;
             }
         }
-
     }
 
     public void setModoSigilo(bool var)
@@ -354,59 +411,29 @@ public class PlayerController : MonoBehaviour
         modoSigilo = var;
         if (var)
         {
+            anim.Play("Crouch");
             multiplicadorBase = multiplicadorSigilo;
             controller.height = modoSigiloHeight;
         }
         else
         {
+            if (controller.velocity.x != 0)
+                anim.Play("Walk_Standing");
+
             multiplicadorBase = 1;
             controller.height = normalHeight;
         }
 
     }
 
+    public bool getModoSigilo()
+    {
+        return modoSigilo;
+    }
+
     public void elementosUI()
     {
-        canvas.transform.Find("CanvasElementosBasicos").Find("TextoVida").GetComponent<Text>().text = "Velocidad " + controller.velocity;
-
-        switch (objetoEquipado)
-        {
-            case 0:
-                canvas.transform.Find("CanvasElementosBasicos").Find("ObjEquipado").GetComponent<Image>().sprite = Resources.Load("Images/NadaIcono", typeof(Sprite)) as Sprite;
-                break;
-            case 1:
-                canvas.transform.Find("CanvasElementosBasicos").Find("ObjEquipado").GetComponent<Image>().sprite = Resources.Load("Images/GanchoIcono", typeof(Sprite)) as Sprite;
-                break;
-            case 2:
-                if (shurikenCount == 0)
-                    canvas.transform.Find("CanvasElementosBasicos").Find("ObjEquipado").GetComponent<Image>().sprite = Resources.Load("Images/ShurikenInactivoIcono", typeof(Sprite)) as Sprite;
-                else if (shurikenCount == 1)
-                    canvas.transform.Find("CanvasElementosBasicos").Find("ObjEquipado").GetComponent<Image>().sprite = Resources.Load("Images/ShurikenIcono", typeof(Sprite)) as Sprite;
-                else if (shurikenCount == 2)
-                    canvas.transform.Find("CanvasElementosBasicos").Find("ObjEquipado").GetComponent<Image>().sprite = Resources.Load("Images/ShurikenDobleIcono", typeof(Sprite)) as Sprite;
-                break;
-        }
-
-        RectTransform auxRect = canvas.transform.Find("CanvasElementosBasicos").Find("Barra de Vida").Find("BarraVida").GetComponent<RectTransform>();
-        auxRect.sizeDelta = new Vector2(160 * (vida / maxVida), auxRect.rect.height);
-
-        if (missionRewards.Contains(ObjetoRecompensa.tipoRecompensa.documentos))
-            canvas.transform.Find("CanvasRecompensasMision").Find("Documentos").gameObject.SetActive(true);
-        else
-            canvas.transform.Find("CanvasRecompensasMision").Find("Documentos").gameObject.SetActive(false);
-
-        if (missionRewards.Contains(ObjetoRecompensa.tipoRecompensa.piezasSecretas))
-            canvas.transform.Find("CanvasRecompensasMision").Find("Piezas").gameObject.SetActive(true);
-        else
-            canvas.transform.Find("CanvasRecompensasMision").Find("Piezas").gameObject.SetActive(false);
-
-        if (missionRewards.Contains(ObjetoRecompensa.tipoRecompensa.armas))
-            canvas.transform.Find("CanvasRecompensasMision").Find("Armas").gameObject.SetActive(true);
-        else
-            canvas.transform.Find("CanvasRecompensasMision").Find("Armas").gameObject.SetActive(false);
-
-        canvas.transform.Find("DetectedText").gameObject.SetActive(detected);
-
+        canvas.updateTime(Edificio.tiempoNivel);
     }
 
     private void elementosAnim()
@@ -434,8 +461,6 @@ public class PlayerController : MonoBehaviour
 
     }
 
-
-
     public void Aturdido(float tiempo)
     {
         estado = -2;
@@ -446,6 +471,7 @@ public class PlayerController : MonoBehaviour
     public void restarVida(float damage)
     {
         vida -= damage;
+        canvas.updateLifeBar(vida / maxVida);
         print("Has recibido " + damage + " de daño - Vida restante " + vida);
 
     }
@@ -487,16 +513,28 @@ public class PlayerController : MonoBehaviour
         {
             cambioProfundidad = false;
         }
-
     }
+
     public void setEstado(int est)
     {
         estado = est;
     }
 
+    public void addPoints(float number)
+    {
+        points += number;
+        canvas.updatePoints(points);
+    }
+
+    public void subtractPoints(float number)
+    {
+        points -= number;
+        canvas.updatePoints(points);
+    }
+
     private void controlMira()
     {
-        if (objetoEquipado == 1)
+        if (objetoEquipado != 0)
         {
             mira.gameObject.SetActive(true);
             float MiraH = Input.GetAxis("ApuntarHorizontal");
@@ -524,26 +562,55 @@ public class PlayerController : MonoBehaviour
 
     private void jump()
     {
-        controller.Move(new Vector3(0, jumpSpeed, 0));
+        controller.Move(new Vector3(0, jumpSpeed * 2, 0));
     }
 
     public void endLevel()
     {
+        levelFinished = true;
+        pausado = true;
+        Edificio.setPausa(true);
+        Time.timeScale = 0;
+        bool obj1, obj2;
+        obj1 = obj2 = false;
 
-        if (missionRewards.Count > 0)
+        for (int i = 0; i < Edificio.objetivosMision.Count; i++)
         {
-            if (mapGenControl.objetivosMision.Count == missionRewards.Count)
-                print("Acabo el nivel con todo");
-            else
-                print("Acabo el nivel con " + missionRewards.Count + " objetivo cumplido");
-        }
-        else
-        {
-            print("No hay ningun objetivo cumplido");
+            switch (Edificio.objetivosMision[i])
+            {
+                case Edificio.condicionesVictoria.conseguirDocumentos:
+                    if (missionRewards.Contains(ObjetoRecompensa.tipoRecompensa.documentos))
+                    {
+                        if (i == 0)
+                            obj1 = true;
+                        else
+                            obj2 = true;
+                    }
+                    break;
+                case Edificio.condicionesVictoria.conseguirPiezas:
+                    if (missionRewards.Contains(ObjetoRecompensa.tipoRecompensa.piezasSecretas))
+                    {
+                        if (i == 0)
+                            obj1 = true;
+                        else
+                            obj2 = true;
+                    }
+                    break;
+                case Edificio.condicionesVictoria.desactivarTrampas:
+                    if (trapCount == 0)
+                    {
+                        if (i == 0)
+                            obj1 = true;
+                        else
+                            obj2 = true;
+                    }
+                    break;
+            }
         }
 
+        canvas.transform.Find("CanvasMenu").GetComponent<IngameMenuController>().setDatosFinPartida(vida, Edificio.objetivosMision, obj1, obj2, trapCount, Edificio.cantTrampasHackeablesTotal, Edificio.tiempoNivel, points);
+        canvas.transform.Find("CanvasMenu").GetComponent<IngameMenuController>().setEstado(2);
     }
-
 
     private void usoObjeto()
     {
@@ -556,6 +623,7 @@ public class PlayerController : MonoBehaviour
         {
             print("Recupero 1 Shuriken");
             shurikenCount++;
+            canvas.updateCantShurikens(shurikenCount);
             recoveringShuriken = false;
         }
 
@@ -582,12 +650,12 @@ public class PlayerController : MonoBehaviour
                 if (Input.GetButtonDown("UseObject") && shurikenCount > 0)
                 {
                     GameObject auxShuriken = Instantiate(shurikenPrefab, transform.Find("Gadgets").transform.position, Quaternion.identity);
+                    float MiraH = Input.GetAxis("ApuntarHorizontal");
+                    float MiraV = Input.GetAxis("ApuntarVertical");
 
-                    if (Input.GetAxis("ApuntarHorizontal") > 0 || (Input.GetAxis("ApuntarHorizontal") == 0 && facingRight))
-                        auxShuriken.GetComponent<ShurikenController>().setDirection(new Vector3(1, 0, 0));
-                    else if (Input.GetAxis("ApuntarHorizontal") < 0 || (Input.GetAxis("ApuntarHorizontal") == 0 && !facingRight))
-                        auxShuriken.GetComponent<ShurikenController>().setDirection(new Vector3(-1, 0, 0));
+                    auxShuriken.GetComponent<ShurikenController>().setDirection(new Vector3(MiraH, MiraV, 0));
                     shurikenCount--;
+                    canvas.updateCantShurikens(shurikenCount);
                 }
                 break;
         }
@@ -608,6 +676,7 @@ public class PlayerController : MonoBehaviour
             }
             else if (gancho.GetComponent<GanchoController>().getReady() && Time.time > tiempoGancho)
             {
+                mira.GetComponent<ScriptMira>().usarObjeto = false;
                 usandoObjeto = false;
                 gancho.transform.position = transform.Find("Gadgets").transform.position;
                 gancho.SetActive(false);
@@ -621,6 +690,7 @@ public class PlayerController : MonoBehaviour
     public void addReward(ObjetoRecompensa.tipoRecompensa recompensa)
     {
         missionRewards.Add(recompensa);
+        canvas.addReward(recompensa);
     }
 
 

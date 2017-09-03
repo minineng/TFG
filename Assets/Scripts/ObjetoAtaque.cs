@@ -6,17 +6,15 @@ public class ObjetoAtaque : ClaseObjeto {
 
 	protected float velocidadActivacion;
     public bool setAlarm;
+    public float timeAturdido;
+    public bool aturdido;
+    
+    public void desactivar(float time)
+    {
+        timeAturdido = time + Time.time;
+        aturdido = true;
+    }
 
 	void ObjetoActivado (){}
 
-
-	// Use this for initialization
-	void Start () {
-		
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		
-	}
 }

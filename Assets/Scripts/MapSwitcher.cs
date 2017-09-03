@@ -10,40 +10,36 @@ public class MapSwitcher : MonoBehaviour {
 		public int NumPisos;
 		public int NumHabitaciones;
 		public int dificultad;
-		public RoomController.listaEstilos estilo;
-
+		public Edificio.listaEstilos estilo;
+        public List<Edificio.condicionesVictoria> condicionesVictoria;
 	};
-	private Button boton1, boton2, boton3 ;
+    public List<nivel> ListaMapas;
 
-	public List<nivel> ListaMapas;
+    private Button boton1, boton2, boton3 ;
+
+	
 
 
 
 
 	// Use this for initialization
 	void Start () {
-		ListaMapas = new List<nivel> ();
+        //generateMaps();
 
-		for (int i = 0; i < 3; i++) {
-			int aux = Random.Range (1, 8);
-			genMapa (aux);
-			transform.GetChild (i).GetComponent<Text> ().text = "Mapa "+i+": \nDificultad " + ListaMapas[i].dificultad + " \nPisos "+ ListaMapas[i].NumPisos + " \nHabitaciones " + ListaMapas[i].NumHabitaciones+" \nEstilo "+ListaMapas[i].estilo;
-		}
-		boton1 = transform.GetChild(0).GetComponent<Button>();
-		boton2 = transform.GetChild(1).GetComponent<Button>();
-		boton3 = transform.GetChild(2).GetComponent<Button>();
-
-	}
+    }
 	
-	// Update is called once per frame
-	void Update () {
-		
-		/*if (boton2.onClick)
-			print ("boton 2");
-		if (boton3.onClick)
-			print ("boton 3");*/
+    public void generateMaps()
+    {
+        ListaMapas = new List<nivel>();
 
-	}
+        for (int i = 0; i < 3; i++)
+        {
+            int aux = Random.Range(1, 8);
+            genMapa(aux);
+            transform.Find(("ConjuntoMapa " + i)).Find("DescripcionNivel").GetComponent<Text>().text = "Mapa " + i + ": \nDificultad " + ListaMapas[i].dificultad + " \nPisos " + ListaMapas[i].NumPisos + " \nHabitaciones " + ListaMapas[i].NumHabitaciones + " \nEstilo " + ListaMapas[i].estilo + " \n" + ListaMapas[i].condicionesVictoria[0] + " \n" + ListaMapas[i].condicionesVictoria[1];
+        }
+
+    }
 
 	private void genMapa(int dif){
 		nivel prueba;
@@ -83,38 +79,30 @@ public class MapSwitcher : MonoBehaviour {
 			prueba.NumHabitaciones = Random.Range (3, 6);
 			break;
 		}
-		prueba.estilo = RoomController.getEstiloRandom ();
-		/*
-		switch (Random.Range (0, 2)) { // Se elige el estilo entre los que hay
-		case 0:
-			prueba.estilo = RoomController.listaEstilos.casaNormal;
-			break;
-		case 1:
-			prueba.estilo = RoomController.listaEstilos.oficina;
-			break;
-		default:
-			prueba.estilo = RoomController.listaEstilos.casaNormal;
-			break;
-		}*/
+		prueba.estilo = Edificio.getEstiloRandom ();
 
-		print ("La dificultad del mapa es " + dif + " y tiene "+ prueba.NumPisos + " pisos y " + prueba.NumHabitaciones+" habitaciones, con estilo "+prueba.estilo);
+        prueba.condicionesVictoria = new List<Edificio.condicionesVictoria>();
+        prueba.condicionesVictoria.Add(Edificio.getRandomCondicionVictoria());
+        while (prueba.condicionesVictoria.Count < 2)
+        {
+            Edificio.condicionesVictoria aux = Edificio.getRandomCondicionVictoria();
+            if (!prueba.condicionesVictoria.Contains(aux))
+                prueba.condicionesVictoria.Add(aux);
+        }
+
+		//print ("La dificultad del mapa es " + dif + " y tiene "+ prueba.NumPisos + " pisos y " + prueba.NumHabitaciones+" habitaciones, con estilo "+prueba.estilo);
 		ListaMapas.Add (prueba);
 	}
 
 	public void goToMap(int index){
-		string aux = ("Mapa "+ index);
-		print (aux);
-		Scene escena = SceneManager.CreateScene (aux);
+		/*Scene escena = SceneManager.CreateScene (aux);
 		SceneManager.UnloadSceneAsync (SceneManager.GetActiveScene().buildIndex);
 		SceneManager.SetActiveScene (escena);
 		GameObject obj = new GameObject ();
-		obj.AddComponent<MapGenController> ();
-		obj.GetComponent<MapGenController> ().init (ListaMapas [index].dificultad, ListaMapas [index].NumPisos, ListaMapas [index].NumHabitaciones, ListaMapas [index].estilo);
-
-		//script = new MapGenController(ListaMapas [index].dificultad, ListaMapas [index].NumPisos, ListaMapas [index].NumHabitaciones, ListaMapas [index].estilo);
-		//obj.AddComponent (script);
+        obj.name = "Edificio";
+		obj.AddComponent<Edificio> ();
+		obj.GetComponent<Edificio> ().init (ListaMapas [index].dificultad, ListaMapas [index].NumPisos, ListaMapas [index].NumHabitaciones, ListaMapas [index].estilo, ListaMapas[index].condicionesVictoria);
+        obj.GetComponent<Edificio>().setInitialTime(Time.time);*/
 	}
-
-
 		
 }

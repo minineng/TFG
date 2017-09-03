@@ -1,0 +1,186 @@
+fileFormatVersion: 2
+guid: 00670b45055c31c48a36175910e5cb98
+timeCreated: 1504289795
+licenseType: Free
+ModelImporter:
+  serializedVersion: 21
+  fileIDToRecycleName:
+    100000: Bowl
+    100002: Box001
+    100004: Box002
+    100006: CARTA_Tubo
+    100008: CARTA_Tubo_1
+    100010: //RootNode
+    100012: CONTENITORE_Cilindro
+    100014: CONTENITORE_Cilindro_1
+    100016: CONTENITORE_Cilindro_2
+    100018: CONTENITORE_Toroide
+    100020: CONTENITORE_Toroide_1
+    100022: Cylinder00
+    100024: Drain_Tube
+    100026: Faucet
+    100028: Faucet_Handle
+    100030: Flange
+    100032: Hoses
+    100034: Overflow
+    100036: Stand
+    100038: Valve_01
+    100040: Valve_02
+    400000: Bowl
+    400002: Box001
+    400004: Box002
+    400006: CARTA_Tubo
+    400008: CARTA_Tubo_1
+    400010: //RootNode
+    400012: CONTENITORE_Cilindro
+    400014: CONTENITORE_Cilindro_1
+    400016: CONTENITORE_Cilindro_2
+    400018: CONTENITORE_Toroide
+    400020: CONTENITORE_Toroide_1
+    400022: Cylinder00
+    400024: Drain_Tube
+    400026: Faucet
+    400028: Faucet_Handle
+    400030: Flange
+    400032: Hoses
+    400034: Overflow
+    400036: Stand
+    400038: Valve_01
+    400040: Valve_02
+    2300000: Bowl
+    2300002: Box001
+    2300004: Box002
+    2300006: CARTA_Tubo
+    2300008: CARTA_Tubo_1
+    2300010: CONTENITORE_Cilindro
+    2300012: CONTENITORE_Cilindro_1
+    2300014: CONTENITORE_Cilindro_2
+    2300016: CONTENITORE_Toroide
+    2300018: CONTENITORE_Toroide_1
+    2300020: Cylinder00
+    2300022: Drain_Tube
+    2300024: Faucet
+    2300026: Faucet_Handle
+    2300028: Flange
+    2300030: Hoses
+    2300032: Overflow
+    2300034: Stand
+    2300036: Valve_01
+    2300038: Valve_02
+    3300000: Bowl
+    3300002: Box001
+    3300004: Box002
+    3300006: CARTA_Tubo
+    3300008: CARTA_Tubo_1
+    3300010: CONTENITORE_Cilindro
+    3300012: CONTENITORE_Cilindro_1
+    3300014: CONTENITORE_Cilindro_2
+    3300016: CONTENITORE_Toroide
+    3300018: CONTENITORE_Toroide_1
+    3300020: Cylinder00
+    3300022: Drain_Tube
+    3300024: Faucet
+    3300026: Faucet_Handle
+    3300028: Flange
+    3300030: Hoses
+    3300032: Overflow
+    3300034: Stand
+    3300036: Valve_01
+    3300038: Valve_02
+    4300000: Drain_Tube
+    4300002: Flange
+    4300004: Valve_02
+    4300006: Stand
+    4300008: Faucet
+    4300010: Bowl
+    4300012: Valve_01
+    4300014: Overflow
+    4300016: Faucet_Handle
+    4300018: Hoses
+    4300020: CARTA_Tubo_1
+    4300022: CONTENITORE_Toroide
+    4300024: CONTENITORE_Cilindro_1
+    4300026: CONTENITORE_Cilindro
+    4300028: CONTENITORE_Toroide_1
+    4300030: CARTA_Tubo
+    4300032: CONTENITORE_Cilindro_2
+    4300034: Box002
+    4300036: Box001
+    4300038: Cylinder00
+    7400000: Default Take
+    9500000: //RootNode
+  materials:
+    importMaterials: 1
+    materialName: 0
+    materialSearch: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    motionNodeName: 
+    rigImportErrors: 
+    rigImportWarnings: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 22
+    meshCompression: 0
+    addColliders: 0
+    importVisibility: 1
+    importBlendShapes: 1
+    importCameras: 1
+    importLights: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    optimizeMeshForGPU: 1
+    keepQuads: 0
+    weldVertices: 1
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 1
+    tangentImportMode: 3
+    normalCalculationMode: 4
+  importAnimation: 1
+  copyAvatar: 0
+  humanDescription:
+    serializedVersion: 2
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    rootMotionBoneName: 
+    rootMotionBoneRotation: {x: 0, y: 0, z: 0, w: 1}
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  animationType: 2
+  humanoidOversampling: 1
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

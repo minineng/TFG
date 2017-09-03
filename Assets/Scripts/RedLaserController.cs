@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class RedLaserController : ObjetoAtaque {
+public class RedLaserController : ObjetoAtaque
+{
 
     struct setLaser
     {
@@ -26,8 +27,9 @@ public class RedLaserController : ObjetoAtaque {
     private float correcionColision;
 
     // Use this for initialization
-    void Start () {
-
+    void Start()
+    {
+        aturdido = false;
         switch (level)
         {
             case 1:
@@ -60,32 +62,34 @@ public class RedLaserController : ObjetoAtaque {
 
         }
         damage = level * 5;
+        puntos = level * 5;
         colision = GetComponent<BoxCollider>();
 
         conjuntoLaser = new List<setLaser>();
 
-        GameObject aux = transform.Find("ConjuntoLaseres").GetChild(0).gameObject;
         laseresMoviles = transform.Find("ConjuntoLaseres").gameObject;
+        GameObject aux = laseresMoviles.transform.GetChild(0).gameObject;
 
-        verticalSpeed = Random.Range(0.01f, 0.31f);
-        minHeight = laseresMoviles.transform.position.y+1f;
+
+        verticalSpeed = Random.Range(0.01f, 0.21f);
+        minHeight = laseresMoviles.transform.position.y + 1f;
         percentage = 0;
         signPercentage = 1;
 
         for (int i = 1; i <= level; i++)
         {
             float dif = 3.33f;
-            Instantiate(aux, new Vector3(aux.transform.position.x, aux.transform.position.y + (i*dif), aux.transform.position.z), Quaternion.identity, transform.Find("ConjuntoLaseres"));
+            Instantiate(aux, new Vector3(aux.transform.position.x, aux.transform.position.y + (i * dif), aux.transform.position.z), Quaternion.identity, laseresMoviles.transform);
         }
         //print("Saco "+ transform.Find("ConjuntoLaseres").childCount+" hijos");
 
-        float nuevoCentroY = transform.Find("ConjuntoLaseres").childCount * 1.4f;
-        float nuevoTamY = transform.Find("ConjuntoLaseres").childCount * 3f;
+        float nuevoCentroY = laseresMoviles.transform.childCount * 1.4f;
+        float nuevoTamY = laseresMoviles.transform.childCount * 3f;
 
         colision.center = new Vector3(colision.center.x, colision.center.y + nuevoCentroY, colision.center.z);
         colision.size = new Vector3(colision.size.x, colision.size.y + nuevoTamY, colision.size.z);
 
-        for (int i = 0; i < transform.Find("ConjuntoLaseres").childCount; i++)
+        for (int i = 0; i < laseresMoviles.transform.childCount; i++)
         {
             setLaser set = new setLaser();
             set.line = transform.GetChild(0).GetChild(i).GetComponent<LineRenderer>();
@@ -97,40 +101,67 @@ public class RedLaserController : ObjetoAtaque {
         posinicial = transform.position;
 
     }
-	
-	// Update is called once per frame
-	void Update () {
 
-        laseresMoviles.transform.position = new Vector3(posinicial.x, minHeight + percentage * maxHeight, posinicial.z);
-        percentage = percentage + verticalSpeed * signPercentage;
-        if (percentage > maxHeight) 
-            signPercentage = -1;
-        else if(laseresMoviles.transform.position.y < minHeight)
-            signPercentage = 1;
+    // Update is called once per frame
+    void Update()
+    {
+        pausa = GetComponentInParent<RoomController>().edificio.pausado;
 
-        colision.center = new Vector3(colision.center.x, laseresMoviles.transform.localPosition.y + correcionColision, colision.center.z);
+        if (aturdido && Time.time > timeAturdido)
+            aturdido = false;
 
-        if (conjuntoLaser.Count == 0)
-            print("falla algo");
+        if (!pausa && !aturdido)
+        {
+
+            laseresMoviles.transform.position = new Vector3(posinicial.x, minHeight + percentage * maxHeight, posinicial.z);
+            percentage = percentage + verticalSpeed * signPercentage;
+            if (percentage > maxHeight)
+                signPercentage = -1;
+            else if (laseresMoviles.transform.position.y < minHeight)
+                signPercentage = 1;
+
+            colision.center = new Vector3(colision.center.x, laseresMoviles.transform.localPosition.y + correcionColision, colision.center.z);
+            updateLaser();
+        }
+
+        /*
+        print("Soy de " + transform.parent.GetComponent<RoomController>().id + " y tengo " + conjuntoLaser.Count);
+
+        if (conjuntoLaser == null)
+            print("falla algo en " + transform.parent.GetComponent<RoomController>().id);
 
         for (int i = 0; i < conjuntoLaser.Count; i++)
         {
             conjuntoLaser[i].line.SetPosition(0, conjuntoLaser[i].pos0.position);
             conjuntoLaser[i].line.SetPosition(1, conjuntoLaser[i].pos1.position);
-        }
-        //if(setAlarm)
+        }*/
+
 
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.tag == "Player")
+        if (other.tag == "Player" && !aturdido)
         {
             print("Toco al jugador");
             other.GetComponent<PlayerController>().restarVida(damage);
+            if (level > 4)
+                other.GetComponent<PlayerController>().startDetection();
+            other.GetComponent<PlayerController>().subtractPoints(puntos);
             setAlarm = true;
         }
-            
+    }
+
+    private void updateLaser()
+    {
+        for (int i = 0; i < laseresMoviles.transform.childCount; i++)
+        {
+            LineRenderer laser = transform.GetChild(0).GetChild(i).GetComponent<LineRenderer>();
+            Vector3[] pos = new Vector3[2];
+            pos[0] = laser.transform.GetChild(0).transform.position;
+            pos[1] = laser.transform.GetChild(1).transform.position;
+            laser.SetPositions(pos);
+        }
     }
 
 }

@@ -8,18 +8,21 @@ public class RoomController : MonoBehaviour
     public int dificultad;
     public int id;
     public int piso;
-    public bool playerSpawn;
     //public bool hasLadder;
     public bool hasTecho;
     public bool tall;
+    public bool jugadorEnRoom;
+    public Edificio edificio;
     public ObjetoRecompensa.tipoRecompensa reward;
 
-    private int numeroElementos;
+    private List<GeneradorObjetos.tipo> listaTrampas;
+    public int numeroElementos;
     public float tHab;
     public bool canHaveLadder;
     public int ladderPosition;
     public int ladderReceived;
     public int cameraPosition;
+    public int cantSitiosOcultos;
 
     public GameObject generadorPrefab;
     public GameObject generadorDecoradoPrefab;
@@ -38,10 +41,8 @@ public class RoomController : MonoBehaviour
     private GameObject techo;
     private GameObject spawner;
 
-    public NavMeshSurface navMesh;
-
     public roomSize tamanyo;
-    public listaEstilos estilo;
+    public Edificio.listaEstilos estilo;
     public tipo tipoHabitacion;
     public bool alarmTriggered;
 
@@ -49,6 +50,7 @@ public class RoomController : MonoBehaviour
 
 
     public static float T_HAB = 202f;
+    public static float ALT_HAB = 66.5f;
 
     public enum tiposParedes
     {
@@ -73,14 +75,6 @@ public class RoomController : MonoBehaviour
         Despacho
     }
 
-    public enum listaEstilos
-    {
-        oficina,
-        casaCutre,
-        casaNormal,
-        casaPija
-    }
-
     public enum IDhijos
     {
         DecoradoIzq,
@@ -93,8 +87,10 @@ public class RoomController : MonoBehaviour
 
     public void Start()
     {
+        cantSitiosOcultos = 0;
+        jugadorEnRoom = false;
         alarmTriggered = false;
-        altTecho = 66.5f;
+        altTecho = ALT_HAB;
         limiteIzquierdo = new Vector3();
         limiteDerecho = new Vector3();
         generadoresDecorado = new List<GameObject>();
@@ -106,15 +102,20 @@ public class RoomController : MonoBehaviour
         if (listaLaterales.Length == 0)
             initListaLaterales();
 
+        if (tipoHabitacion == tipo.Entrada)
+        {
+            addTrampaToList(GeneradorObjetos.tipo.RedLaser);
+        }
+
         techo.SetActive(hasTecho);
 
-        if (playerSpawn)
+        if (tipoHabitacion == tipo.Entrada)
             spawner.SetActive(true);
         else
             spawner.SetActive(false);
 
         rellenarSala();
-        navMesh = transform.Find("ParedSuelo").GetComponent<NavMeshSurface>();
+        //navMesh = transform.Find("ParedSuelo").GetComponent<NavMeshSurface>();
         //navMesh.Bake();
     }
 
@@ -132,7 +133,6 @@ public class RoomController : MonoBehaviour
 
         tHab = T_HAB;
         limiteIzquierdo = new Vector3(transform.position.x - 94.2f, transform.position.y - 23f, transform.position.z - 16.8f);
-
 
         switch (tamanyo)
         {
@@ -163,19 +163,16 @@ public class RoomController : MonoBehaviour
                 tHab /= 2;
                 canHaveLadder = true;
 
-                /*for (int i = 0; i < 2; i++) {
+                for (int i = 0; i < 3; i++) {
                     GetComponents<BoxCollider> () [i].size = new Vector3 (GetComponents<BoxCollider> () [i].size.x / 2 - 12, GetComponents<BoxCollider> () [i].size.y, GetComponents<BoxCollider> () [i].size.z);
                     GetComponents<BoxCollider> () [i].center = new Vector3 (GetComponents<BoxCollider> () [i].center.x + 50, GetComponents<BoxCollider> () [i].center.y, GetComponents<BoxCollider> () [i].center.z);
-                }*/
+                }
 
                 if (hasTecho)
                 {
                     techo.transform.localScale = new Vector3(techo.transform.localScale.x / 2, techo.transform.localScale.y, techo.transform.localScale.z);
                     techo.transform.position = new Vector3(techo.transform.position.x - 50.8f, techo.transform.position.y, techo.transform.position.z);
                 }
-
-
-
                 break;
             case roomSize.medium:
                 numeroElementos = 2;
@@ -204,7 +201,7 @@ public class RoomController : MonoBehaviour
                 pared1.name = "Pared 2";
                 pared1.transform.position = new Vector3((suelo.transform.GetChild(3).position.x + tHab / 2), suelo.transform.GetChild(3).position.y, suelo.transform.GetChild(3).position.z);
 
-                for (int i = 0; i < 2; i++)
+                for (int i = 0; i < 3; i++)
                 {
                     GetComponents<BoxCollider>()[i].size = new Vector3(GetComponents<BoxCollider>()[i].size.x * 2 - 12, GetComponents<BoxCollider>()[i].size.y, GetComponents<BoxCollider>()[i].size.z);
                     GetComponents<BoxCollider>()[i].center = new Vector3(GetComponents<BoxCollider>()[i].center.x - 100, GetComponents<BoxCollider>()[i].center.y, GetComponents<BoxCollider>()[i].center.z);
@@ -274,7 +271,6 @@ public class RoomController : MonoBehaviour
 
     }
 
-
     private void disposicionGeneradoresObjetos()
     {
 
@@ -313,18 +309,36 @@ public class RoomController : MonoBehaviour
         else if (auxCamera == 2)
             cameraPosition = 3;
 
+        if (tipoHabitacion == tipo.Entrada || tipoHabitacion == tipo.Banyo )
+            cameraPosition = 0;
+
         //print("Saco " + auxCamera + " camaras");
         //print ("El numero de trampas es " + aux);
         aux++;
-        if (aux > 0)
+
+        if (tipoHabitacion == tipo.Banyo)
         {
-            Vector3 position;
-            if (reward == ObjetoRecompensa.tipoRecompensa.ninguno)
+            aux = 0;
+            if(reward == ObjetoRecompensa.tipoRecompensa.ninguno)
+                reward = Random.Range(0, 3) == 1 ? ObjetoRecompensa.tipoRecompensa.conjuntoPuntos : ObjetoRecompensa.tipoRecompensa.ninguno;
+        }
+
+        if (reward == ObjetoRecompensa.tipoRecompensa.ninguno)
+        {
+
+            if (listaTrampas != null)
+                aux = listaTrampas.Count;
+            else
+                aux--;
+
+            if (aux > 0)
             {
-                for (int i = 1; i < aux; i++)
+                Vector3 position;
+                for (int i = 0; i < aux; i++)
                 {
+
                     position = limiteIzquierdo;
-                    position.x = position.x + i * (tHab / aux);
+                    position.x = position.x + (i + 1) * (tHab / (aux + 1));
 
                     //print (position.x + " + " + i +" * (" +tHab+" / "+aux+")");
 
@@ -332,29 +346,53 @@ public class RoomController : MonoBehaviour
                     objeto.GetComponent<GeneradorObjetos>().nivel = dificultad;
                     objeto.GetComponent<GeneradorObjetos>().estilo = estilo;
 
-                    GameObject auxObj = objeto.GetComponent<GeneradorObjetos>().generateObjects(GeneradorObjetos.getRandomObject());
+                    GameObject auxObj;
+                    if (listaTrampas == null)
+                    {
+                        GeneradorObjetos.tipo objetoRandom = GeneradorObjetos.getRandomObject();
+                        if (objetoRandom == GeneradorObjetos.tipo.Cepo || objetoRandom == GeneradorObjetos.tipo.Mina)
+                            edificio.cantTrampasHackeablesTotal++;
+
+                        auxObj = objeto.GetComponent<GeneradorObjetos>().generateObjects(objetoRandom);
+
+
+                    }
+                    else
+                        auxObj = objeto.GetComponent<GeneradorObjetos>().generateObjects(listaTrampas[i]);
+
                     objeto.transform.SetParent(this.transform);
                     auxObj.transform.SetParent(this.transform);
 
                 }
             }
-            else
-            {
-                position = limiteIzquierdo;
-                position.x = position.x + (tHab / 2);
-
-                //print (position.x + " + " + i +" * (" +tHab+" / "+aux+")");
-
-                GameObject objeto = Instantiate(generadorPrefab, position, Quaternion.identity);
-                objeto.GetComponent<GeneradorObjetos>().nivel = dificultad;
-                objeto.GetComponent<GeneradorObjetos>().estilo = estilo;
-
-                GameObject auxObj = objeto.GetComponent<GeneradorObjetos>().generateObjects(GeneradorObjetos.tipo.Recompensa);
-                auxObj.GetComponent<ObjetoRecompensa>().tipoObjeto = reward;
-                objeto.transform.SetParent(this.transform);
-                auxObj.transform.SetParent(this.transform);
-            }
         }
+        else
+        {
+            Vector3 position;
+            position = limiteIzquierdo;
+            position.x = position.x + (tHab / 2);
+
+            //print (position.x + " + " + i +" * (" +tHab+" / "+aux+")");
+
+            GameObject objeto = Instantiate(generadorPrefab, position, Quaternion.identity);
+            objeto.GetComponent<GeneradorObjetos>().nivel = dificultad;
+            objeto.GetComponent<GeneradorObjetos>().estilo = estilo;
+
+            GameObject auxObj = objeto.GetComponent<GeneradorObjetos>().generateObjects(GeneradorObjetos.tipo.Recompensa);
+            auxObj.GetComponent<ObjetoRecompensa>().tipoObjeto = reward;
+            objeto.transform.SetParent(this.transform);
+            auxObj.transform.SetParent(this.transform);
+        }
+
+    }
+
+    public void addTrampaToList(GeneradorObjetos.tipo trampa)
+    {
+        if (listaTrampas == null)
+            listaTrampas = new List<GeneradorObjetos.tipo>();
+
+        listaTrampas.Add(trampa);
+
     }
 
     private void disposicionCamaras()
@@ -388,7 +426,7 @@ public class RoomController : MonoBehaviour
                     break;
                 case 2:
                     {
-                        
+
                         GameObject cameraObject = Instantiate(cameraPrefab, posDer, Quaternion.identity, this.transform);
                         cameraObject.name = "Camara Der";
                         cameraObject.GetComponent<ScriptCamara>().apuntaDerecha = false;
@@ -415,9 +453,9 @@ public class RoomController : MonoBehaviour
         }
     }
 
-
     private void disposicionGeneradoresSitiosOcultos()
     {
+
         float percentage = 50 - (dificultad - 1) * 10;
         if (percentage < 20)
             percentage = 15;
@@ -472,54 +510,12 @@ public class RoomController : MonoBehaviour
                     auxObj.transform.name = "Sitio Oculto " + (elements.Count);
                     objeto.transform.SetParent(this.transform);
                     auxObj.transform.SetParent(this.transform);
+                    cantSitiosOcultos++;
                     elements.Add(auxPos);
                 }
             }
         }
     }
-
-    /*
-     * private void disposicionGeneradoresSitiosOcultos()
-    {
-        float percentage = 50 - (dificultad - 1) * 10;
-        if (percentage < 20)
-            percentage = 15;
-
-        //int auxRand = Random.Range(0, 100);
-        int auxRand = 1;
-
-
-        if (auxRand <= percentage)
-        {
-            print("Salgo con " + auxRand);
-            int auxRandElement = Random.Range(1, numeroElementos + 1);
-
-
-            print("Elementos " + auxRandElement);
-
-            Vector3 position;
-
-            for (int i = 1; i <= auxRandElement; i++)
-            {
-                position = limiteIzquierdo;
-                position.x = position.x + i * (tHab / (auxRandElement + 1));
-                position.z = -64.04f;
-
-                print(position.x + " + " + i + " * (" + tHab + " / " + auxRandElement + ")");
-
-                GameObject objeto = Instantiate(generadorPrefab, position, Quaternion.identity);
-                objeto.transform.position = new Vector3(position.x - 40, position.y, position.z);
-                objeto.GetComponent<GeneradorObjetos>().nivel = dificultad;
-                objeto.GetComponent<GeneradorObjetos>().estilo = estilo;
-
-                GameObject auxObj = objeto.GetComponent<GeneradorObjetos>().generateObjects(GeneradorObjetos.tipo.SitioOculto);
-                auxObj.transform.name = "Sitio Oculto " + (i - 1);
-                objeto.transform.SetParent(this.transform);
-                auxObj.transform.SetParent(this.transform);
-            }
-        }
-    }
-     * */
 
     private void disposicionDecorados()
     {
@@ -532,37 +528,52 @@ public class RoomController : MonoBehaviour
             position = limiteIzquierdo;
             position.x = position.x + i * (tHab / numeroElementos);
 
+            GameObject lightGameObject = new GameObject("Luz" + i);
+            Light lightComp = lightGameObject.AddComponent<Light>();
+            lightGameObject.transform.position = new Vector3(position.x - 40, position.y + 51, position.z);
+            lightGameObject.GetComponent<Light>().range = 100;
+            lightGameObject.GetComponent<Light>().intensity = 4;
+            lightGameObject.transform.SetParent(this.transform);
+
             if (i - 1 != ladderReceived)
             {
-
                 GameObject auxDeco = Instantiate(generadorDecoradoPrefab, this.transform);
                 auxDeco.name = "Generador Decorado " + (i);
                 auxDeco.transform.position = new Vector3(position.x - 40, position.y, posicionDecorados);
                 auxDeco.GetComponent<GeneradorDecorado>().estilo = estilo;
                 if (ladderPosition == i)
                     auxDeco.GetComponent<GeneradorDecorado>().escalera = true;
-                else
+
+                if (ladderPosition != i)
                     auxDeco.GetComponent<GeneradorDecorado>().seleccion = tipoHabitacion;
 
-                GameObject lightGameObject = new GameObject("Luz" + i);
-                Light lightComp = lightGameObject.AddComponent<Light>();
-                lightGameObject.transform.position = new Vector3(position.x - 40, position.y + 51, position.z);
-                lightGameObject.GetComponent<Light>().range = 100;
-                lightGameObject.GetComponent<Light>().intensity = 4;
+                switch (tipoHabitacion)
+                {
+                    case tipo.HabitacionPrincipal:
 
-                lightGameObject.transform.SetParent(this.transform);
+                        if (tamanyo == roomSize.medium && i == 1) // pongo los generadores de decorados orientados en la direccion correcta
+                            auxDeco.GetComponent<GeneradorDecorado>().derecha = false;
+                        else if (tamanyo == roomSize.medium && i == 2)
+                            auxDeco.GetComponent<GeneradorDecorado>().derecha = true;
 
-                if (tamanyo == roomSize.medium && i == 1) // pongo los generadores de decorados orientados en la direccion correcta
-                    auxDeco.GetComponent<GeneradorDecorado>().derecha = false;
-                else if (tamanyo == roomSize.medium && i == 2)
-                    auxDeco.GetComponent<GeneradorDecorado>().derecha = true;
+                        if (tamanyo == roomSize.large && i < 3)
+                            auxDeco.GetComponent<GeneradorDecorado>().derecha = false;
+                        else if (tamanyo == roomSize.large && i > 2)
+                            auxDeco.GetComponent<GeneradorDecorado>().derecha = true;
 
-                if (tamanyo == roomSize.large && i < 3)
-                    auxDeco.GetComponent<GeneradorDecorado>().derecha = false;
-                else if (tamanyo == roomSize.large && i > 2)
-                    auxDeco.GetComponent<GeneradorDecorado>().derecha = true;
+                        generadoresDecorado.Add(auxDeco);
+                        break;
+                    case tipo.Entrada:
 
-                generadoresDecorado.Add(auxDeco);
+                        if (i != numeroElementos && !auxDeco.GetComponent<GeneradorDecorado>().escalera)
+                            auxDeco.GetComponent<GeneradorDecorado>().apagado = true;
+                        else
+                            auxDeco.GetComponent<GeneradorDecorado>().derecha = true;
+
+                        generadoresDecorado.Add(auxDeco);
+
+                        break;
+                }
             }
 
         }
@@ -907,24 +918,24 @@ public class RoomController : MonoBehaviour
         return generadoresDecorado;
     }
 
-    public static listaEstilos getEstiloRandom()
+    private void OnTriggerEnter(Collider other)
     {
-
-        switch (Random.Range(0, 2))
-        { // Se elige el estilo entre los que hay
-            case 0:
-                return listaEstilos.casaNormal;
-                break;
-            case 1:
-                return RoomController.listaEstilos.oficina;
-                break;
-            default:
-                return RoomController.listaEstilos.casaNormal;
-                break;
-        }
-
-
-
+        if (other.tag == "Player")
+            jugadorEnRoom = true;
     }
+
+    private void OnTriggerStay(Collider other)
+    {
+        if (other.tag == "Player")
+            jugadorEnRoom = true;
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.tag == "Player")
+            jugadorEnRoom = false;
+    }
+
+
 
 }

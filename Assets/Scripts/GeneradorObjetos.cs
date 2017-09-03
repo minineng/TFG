@@ -6,7 +6,7 @@ public class GeneradorObjetos : MonoBehaviour
 {
 
     public int nivel;
-    public RoomController.listaEstilos estilo;
+    public Edificio.listaEstilos estilo;
     public tipo Seleccion;
     public bool done;
 
@@ -21,6 +21,13 @@ public class GeneradorObjetos : MonoBehaviour
         Recompensa,
         SitioOculto
     }
+
+    public struct trapStruct
+    {
+        public tipo tipo;
+        public int level;
+        public float verticalSpeed; // Solo para Red Laser
+    };
 
     public bool camara;
 
@@ -80,6 +87,7 @@ public class GeneradorObjetos : MonoBehaviour
                 {
                     GameObject aux = Resources.Load("Prefabs/Mina") as GameObject;
                     objeto = Instantiate(aux, posicion, Quaternion.identity);
+                    objeto.transform.Rotate(-90, 0, 0);
                     objeto.GetComponent<ScriptMina>().level = nivel;
                     break;
                 }
@@ -100,14 +108,15 @@ public class GeneradorObjetos : MonoBehaviour
             case tipo.Recompensa:
                 {
                     GameObject aux = Resources.Load("Prefabs/Recompensa") as GameObject;
-                    objeto = Instantiate(aux, new Vector3(posicion.x, posicion.y+15, posicion.z), Quaternion.identity);
+                    objeto = Instantiate(aux, new Vector3(posicion.x, posicion.y + 15, posicion.z), Quaternion.identity);
+                    objeto.GetComponent<ObjetoRecompensa>().level = nivel;
                     objeto.GetComponent<ObjetoRecompensa>().tipoObjeto = ObjetoRecompensa.tipoRecompensa.documentos;
                     break;
                 }
             case tipo.SitioOculto:
                 {
                     GameObject aux = Resources.Load("Prefabs/SitioOculto") as GameObject;
-                    objeto = Instantiate(aux, new Vector3(posicion.x, posicion.y-3, posicion.z), Quaternion.identity);
+                    objeto = Instantiate(aux, new Vector3(posicion.x, posicion.y - 3, posicion.z), Quaternion.identity);
                     objeto.GetComponent<SitioOcultoController>().estilo = estilo;
                     break;
                 }
@@ -128,11 +137,8 @@ public class GeneradorObjetos : MonoBehaviour
 
     public static tipo getRandomObject()
     {
-        switch (Random.Range(3, 4))
+        switch (Random.Range(0, 4))
         {
-            case 0:
-                return (tipo.Mina);
-                break;
             case 1:
                 return (tipo.Cepo);
                 break;

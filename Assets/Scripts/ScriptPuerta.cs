@@ -17,6 +17,8 @@ public class ScriptPuerta : ClaseObjeto
         hasCamera = true;
         cerrado = true;
         //print ("El estilo de esta puerta es "+estilo);
+        transform.localScale = new Vector3(-1, 1, -1);
+
 
         if (transform.name == "Puerta Izquierda" && GetComponentInParent<RoomController>().id == 0)
             isExit = true;
@@ -33,12 +35,12 @@ public class ScriptPuerta : ClaseObjeto
 
         switch (estilo)
         {
-            case RoomController.listaEstilos.casaNormal:
+            case Edificio.listaEstilos.casaNormal:
                 //print ("Puerta estilo japones");
                 this.transform.GetChild(0).gameObject.SetActive(true);
                 anim = this.transform.GetChild(0).GetComponent<Animator>();
                 break;
-            case RoomController.listaEstilos.oficina:
+            case Edificio.listaEstilos.oficina:
                 //print (this.gameObject.name + " nivel: " + level);
 
                 int aux = 0;
