@@ -18,6 +18,7 @@ public class cepoController : ObjetoAtaque
         ruido = 1;
         damage = level * 7.5f;
         puntos = level * 50;
+        GetComponentInParent<RoomController>().addCantTrampasHackeablesTotal();
     }
 
     private void Update()

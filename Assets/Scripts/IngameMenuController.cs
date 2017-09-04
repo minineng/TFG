@@ -26,23 +26,7 @@ public class IngameMenuController : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-        switch (estado)
-        {
-            case 1:
-                if (Input.GetButtonDown("Back"))
-                    goToMainMenu();
-                if (Input.GetButtonDown("ModoSigilo"))
-                    restartLevel();
-                break;
-            case 2:
-                if (Input.GetButtonDown("Back"))
-                    goToMainMenu();
-                if (Input.GetButtonDown("ModoSigilo"))
-                    restartLevel();
-                break;
-        }
-
-
+       
 	}
 
     public void goToMainMenu()

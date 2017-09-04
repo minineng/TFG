@@ -6,6 +6,7 @@ public class ObjetoRecompensa : ClaseObjeto
 {
 
     public tipoRecompensa tipoObjeto;
+    public int trueLevel;
     public float rotationSpeed;
     public float heightMovement;
     private float minHeight;
@@ -19,12 +20,6 @@ public class ObjetoRecompensa : ClaseObjeto
         documentos,
         piezasSecretas,
         conjuntoPuntos
-    };
-
-    public struct rewardStruct
-    {
-        public tipoRecompensa tipo;
-        public int RewardTrueLevel;
     };
 
     // Use this for initialization
@@ -64,15 +59,15 @@ public class ObjetoRecompensa : ClaseObjeto
                     transform.GetChild(i).gameObject.SetActive(value);
                 }
 
-                int auxLevel = Random.Range(1, level + 1);
-                print("Soy nivel "+level+ " y saco un "+auxLevel);
+                trueLevel = Random.Range(1, level + 1);
+                //print("Soy nivel "+level+ " y saco un "+ trueLevel);
                 int son;
-                if (auxLevel < 3)
+                if (trueLevel < 3)
                 {
                     puntos = 500;
                     son = 0;
                 }
-                else if (auxLevel >= 3 && auxLevel < 5)
+                else if (trueLevel >= 3 && trueLevel < 5)
                 {
                     puntos = 1000;
                     son = 1;

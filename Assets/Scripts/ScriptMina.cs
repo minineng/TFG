@@ -20,6 +20,7 @@ public class ScriptMina : ObjetoAtaque {
         puntos = level * 150;
 		activado = false;
 		velocidadActivacion = 20;
+        GetComponentInParent<RoomController>().addCantTrampasHackeablesTotal();
 	}
 
     private void Update()

@@ -70,7 +70,7 @@ public class RedLaserController : ObjetoAtaque
         laseresMoviles = transform.Find("ConjuntoLaseres").gameObject;
         GameObject aux = laseresMoviles.transform.GetChild(0).gameObject;
 
-
+        if(verticalSpeed == 0)
         verticalSpeed = Random.Range(0.01f, 0.21f);
         minHeight = laseresMoviles.transform.position.y + 1f;
         percentage = 0;
@@ -100,6 +100,11 @@ public class RedLaserController : ObjetoAtaque
 
         posinicial = transform.position;
 
+    }
+
+    public void setVerticalSpeed(float speed)
+    {
+        verticalSpeed = speed;
     }
 
     // Update is called once per frame
@@ -143,7 +148,6 @@ public class RedLaserController : ObjetoAtaque
     {
         if (other.tag == "Player" && !aturdido)
         {
-            print("Toco al jugador");
             other.GetComponent<PlayerController>().restarVida(damage);
             if (level > 4)
                 other.GetComponent<PlayerController>().startDetection();

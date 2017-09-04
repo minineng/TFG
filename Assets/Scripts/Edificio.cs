@@ -2,10 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
-using UnityEngine.AI;
-
-
-
 
 public class Edificio : MonoBehaviour
 {
@@ -28,6 +24,7 @@ public class Edificio : MonoBehaviour
     public int NumeroTrampas; //Solo minas y cepos
     public bool pausado;
     private bool buildingSaved;
+    private bool mapLoaded;
 
     private List<GameObject> roomList;
 
@@ -55,10 +52,12 @@ public class Edificio : MonoBehaviour
         public int tam;
         public bool tall;
         public int id;
+        public int piso;
         public bool hasTecho;
         public int cameraPosition;
+        public int nivel;
         public int cantSitiosOcultos;
-        public ObjetoRecompensa.rewardStruct reward;
+        public ObjetoRecompensa.tipoRecompensa reward;
         public RoomController.tiposParedes[] listaLaterales;
         public List<GeneradorObjetos.trapStruct> listaTrampas;
     }
@@ -79,34 +78,44 @@ public class Edificio : MonoBehaviour
         cantTrampasHackeablesTotal = 0;
         timeToForgetPlayer = dificultad * 1.5f;
         cantHabitacionesTotal = 0;
-        if (objetivosMision.Count == 0)
-            objetivosMision = new List<condicionesVictoria>();
-        roomList = new List<GameObject>();
-        listaPisos = new List<estructuraPisos>();
-        probDificultad = new List<int>();
         matrizHabitaciones = new int[NumPisos, NumHabitaciones * 2];
         matrixInitialator();
-        calculoCondicionVictoria();
-        lecturaDificultad();
-        mapGeneration();
-        rellenarParedes();
 
-        comprobacionEdificio();
-
-        //print("Numero total de habitaciones " + cantHabitacionesTotal);
-        //printListaHab ();
-        //lecDif ();
-
-        /*for(int j = 0; j < cantHabitacionesTotal; j++)
+        if (!mapLoaded)
         {
-            print("Hola");
-            //transform.GetChild(j).GetComponent<RoomController>().bakeNavMesh();
+            if (objetivosMision.Count == 0)
+                objetivosMision = new List<condicionesVictoria>();
+            //roomList = new List<GameObject>();
+            listaPisos = new List<estructuraPisos>();
+            probDificultad = new List<int>();
+            lecturaDificultad();
+            mapGeneration();
+        }
+        MapBuilder();
 
+        if (!mapLoaded)
+        {
+            rellenarParedes();
+            comprobacionEdificio();
+        }
+    }
 
+    public void loadedMap(List<estructuraPisos> lista, condicionesVictoria condicion0, condicionesVictoria condicion1, int dif)
+    {
+        mapLoaded = true;
+        objetivosMision = new List<condicionesVictoria>();
+        objetivosMision.Add(condicion0);
+        objetivosMision.Add(condicion1);
+        listaPisos = lista;
+        estilo = lista[0].habitaciones[0].estiloHabitacion;
+        NumPisos = listaPisos.Count;
+        room = Resources.Load("Prefabs/Room", typeof(GameObject)) as GameObject;
+        dificultad = dif;
+        int tamAcum = 0;
+        for (int i = 0; i < lista[0].habitaciones.Count; i++)
+            tamAcum += lista[0].habitaciones[i].tam;
 
-
-        }*/
-
+        NumHabitaciones = (tamAcum/2);
     }
 
     private void comprobacionEdificio()
@@ -136,14 +145,17 @@ public class Edificio : MonoBehaviour
             }
             cont++;
         }
-
+        /*
         string lista = "las habitaciones conectadas son: ";
         for (int i = 0; i < idConectados.Count; i++)
             lista += idConectados[i].id + ", ";
-        print(lista);
+        print(lista);*/
 
         if (objetivosMision.Contains(condicionesVictoria.conseguirDocumentos))
+        {
             idConectados[idConectados.Count - 1].habitacion.GetComponent<RoomController>().reward = ObjetoRecompensa.tipoRecompensa.documentos;
+            setReward(ObjetoRecompensa.tipoRecompensa.documentos, idConectados.Count - 1);
+        }
 
         if (objetivosMision.Contains(condicionesVictoria.conseguirPiezas))
         {
@@ -156,16 +168,13 @@ public class Edificio : MonoBehaviour
                     if (getRoomObjectByID(auxID).GetComponent<RoomController>().reward == ObjetoRecompensa.tipoRecompensa.ninguno)
                     {
                         getRoomObjectByID(auxID).GetComponent<RoomController>().reward = ObjetoRecompensa.tipoRecompensa.piezasSecretas;
-                        print("Genero piezas en " + auxID);
+                        setReward(ObjetoRecompensa.tipoRecompensa.piezasSecretas, auxID);
                         done = true;
                     }
                     else
                         auxID++;
                 }
-
             }
-
-
         }
     }
 
@@ -394,7 +403,6 @@ public class Edificio : MonoBehaviour
     {
         for (int pisoActual = 0; pisoActual < NumPisos; pisoActual++)
             listaPisos.Add(generateFloor(pisoActual));
-        MapBuilder();
     }
 
     private void MapBuilder()
@@ -426,8 +434,19 @@ public class Edificio : MonoBehaviour
                 auxHab.habitacion = habitacion;
                 auxRoom.id = auxHab.id;
                 auxRoom.piso = pisoActual;
-                auxRoom.dificultad = dificultadParaHabitacion();
-
+                if (mapLoaded)
+                {
+                    auxRoom.listaLaterales = auxHab.listaLaterales;
+                    auxRoom.listaTrampas = auxHab.listaTrampas;
+                    auxRoom.reward = auxHab.reward;
+                    auxRoom.dificultad = auxHab.nivel;
+                }
+                else
+                {
+                    auxRoom.dificultad = dificultadParaHabitacion();
+                    auxHab.nivel = auxRoom.dificultad;
+                }
+                    
                 switch (auxHab.tam)
                 {
                     case 2:
@@ -449,6 +468,64 @@ public class Edificio : MonoBehaviour
 
 
     }
+
+    public void setListaLaterales(RoomController.tiposParedes[] var, int idRoom)
+    {
+        Vector2 aux = getRoomPosbyID(idRoom);
+        estructuraHabitacion habTemp = listaPisos[(int)aux.x].habitaciones[(int)aux.y];
+        habTemp.listaLaterales = var;
+        listaPisos[(int)aux.x].habitaciones[(int)aux.y] = habTemp;
+    }
+
+    public void setReward(ObjetoRecompensa.tipoRecompensa var, int idRoom)
+    {
+        Vector2 aux = getRoomPosbyID(idRoom);
+        estructuraHabitacion habTemp = listaPisos[(int)aux.x].habitaciones[(int)aux.y];
+        habTemp.reward = var;
+        listaPisos[(int)aux.x].habitaciones[(int)aux.y] = habTemp;
+    }
+
+    public void setCameraPosition(int cameraPos, int idRoom)
+    {
+        Vector2 aux = getRoomPosbyID(idRoom);
+        estructuraHabitacion habTemp = listaPisos[(int)aux.x].habitaciones[(int)aux.y];
+        habTemp.cameraPosition = cameraPos;
+        listaPisos[(int)aux.x].habitaciones[(int)aux.y] = habTemp;
+    }
+
+    public void setCantSitiosOcultos(int cantSitios, int idRoom)
+    {
+        Vector2 aux = getRoomPosbyID(idRoom);
+        estructuraHabitacion habTemp = listaPisos[(int)aux.x].habitaciones[(int)aux.y];
+        habTemp.cantSitiosOcultos = cantSitios;
+        listaPisos[(int)aux.x].habitaciones[(int)aux.y] = habTemp;
+    }
+
+    public void setListaTrampas(List<GeneradorObjetos.trapStruct> auxListaTemp ,int idRoom)
+    {
+        Vector2 aux = getRoomPosbyID(idRoom);
+        estructuraHabitacion habTemp = listaPisos[(int)aux.x].habitaciones[(int)aux.y];
+        habTemp.listaTrampas = auxListaTemp;
+        listaPisos[(int)aux.x].habitaciones[(int)aux.y] = habTemp;
+    }
+
+    public Vector2 getRoomPosbyID(int idRoom)
+    {
+        Vector2 aux = new Vector2(-1, -1);
+
+        for(int i = 0; i < NumPisos; i++)
+        {
+            for(int j = 0; j < listaPisos[i].habitaciones.Count; j++)
+            {
+                if (listaPisos[i].habitaciones[j].id == idRoom)
+                {
+                    return new Vector2(i, j);
+                }
+            }
+        }
+        return aux;
+    }
+
 
     /*
     private void mapGeneration()
@@ -714,7 +791,7 @@ public class Edificio : MonoBehaviour
     {
         dificultad = dif;
         NumPisos = pisos;
-        room = Resources.Load("Prefabs/Room") as GameObject;
+        room = Resources.Load("Prefabs/Room", typeof(GameObject)) as GameObject;
         objetivosMision = condiciones;
         NumHabitaciones = numHab;
         estilo = style;
@@ -885,13 +962,6 @@ public class Edificio : MonoBehaviour
                     {
                         habitacion.GetComponent<RoomController>().setlistaLaterales(3, RoomController.tiposParedes.pared);
                     }
-                    /*
-					if(coordenadas.x != 0 && matrizHabitaciones[pisoActual, (int) (coordenadas.x -1)] != matrizHabitaciones[pisoActual+1, (int) (coordenadas.x -1)])
-						habitacion.GetComponent<RoomController> ().setlistaLaterales (2, RoomController.tiposParedes.trampilla);
-					*/
-                    /*if (coordenadas.x != 0 && matrizHabitaciones [pisoActual, (int)(coordenadas.x - 1)] == matrizHabitaciones [pisoActual + 1, (int)(coordenadas.x - 1)])
-						habitacion.GetComponent<RoomController> ().setlistaLaterales (2, RoomController.tiposParedes.pared);
-*/
                     if (coordenadas.y + tam < NumHabitaciones * 2 && matrizHabitaciones[pisoActual, (int)(coordenadas.y + tam)] != matrizHabitaciones[pisoActual + 1, (int)(coordenadas.y + tam)])
                         habitacion.GetComponent<RoomController>().setlistaLaterales(3, RoomController.tiposParedes.trampilla);
 
@@ -922,11 +992,8 @@ public class Edificio : MonoBehaviour
                     listaPisos[pisoActual].habitaciones[habActual].conectaCon.Add(listaPisos[pisoActual + 1].habitaciones[getIndexHabitacionPorCoordenada(pisoActual + 1, listaPisos[pisoActual].escaleraEn)]);
                     listaPisos[pisoActual + 1].habitaciones[getIndexHabitacionPorCoordenada(pisoActual + 1, listaPisos[pisoActual].escaleraEn)].conectaCon.Add(listaPisos[pisoActual].habitaciones[habActual]);
                 }
-
-
             }
         }
-
     }
 
     private int posicionNextRoom(int piso)
@@ -1023,21 +1090,6 @@ public class Edificio : MonoBehaviour
         tiempoNivel = Time.time - initialTime;
     }
 
-    public void calculoCondicionVictoria()
-    {
-
-        switch (Random.Range(0, 2))
-        {
-            case 0:
-                //print ((int)condicionesVictoria.conseguirDocumentos);
-                break;
-            case 1:
-                //print ((int)condicionesVictoria.desactivarTrampas);
-                break;
-
-        }
-    }
-
     public int getIndexHabitacionPorCoordenada(int piso, int coordenada)
     {
         for (int i = 0; i < listaPisos[piso].habitaciones.Count; i++)
@@ -1107,7 +1159,6 @@ public class Edificio : MonoBehaviour
             {
                 for (int i = 1; i < strArr.Length; i++)
                 {
-
                     float aux = int.Parse(strArr[i]) * NumHabitaciones * NumPisos / 100f;
                     probDificultad.Add(Mathf.RoundToInt(aux));
                     //print ("El valor es " +Mathf.RoundToInt(aux));
@@ -1115,8 +1166,10 @@ public class Edificio : MonoBehaviour
                 listo = true;
             }
         }
-
-
     }
 
+    public List<estructuraPisos> getListaPisos()
+    {
+        return listaPisos;
+    }
 }

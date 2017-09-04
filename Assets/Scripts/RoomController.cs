@@ -15,7 +15,7 @@ public class RoomController : MonoBehaviour
     public Edificio edificio;
     public ObjetoRecompensa.tipoRecompensa reward;
 
-    private List<GeneradorObjetos.tipo> listaTrampas;
+    public List<GeneradorObjetos.trapStruct> listaTrampas;
     public int numeroElementos;
     public float tHab;
     public bool canHaveLadder;
@@ -102,9 +102,17 @@ public class RoomController : MonoBehaviour
         if (listaLaterales.Length == 0)
             initListaLaterales();
 
-        if (tipoHabitacion == tipo.Entrada)
+
+        if(listaTrampas == null)
+            listaTrampas = new List<GeneradorObjetos.trapStruct>();
+
+        if (tipoHabitacion == tipo.Entrada && listaTrampas.Count == 0)
         {
-            addTrampaToList(GeneradorObjetos.tipo.RedLaser);
+            GeneradorObjetos.trapStruct auxElement = new GeneradorObjetos.trapStruct();
+            auxElement.tipo = GeneradorObjetos.tipo.RedLaser;
+            auxElement.level = dificultad;
+            auxElement.verticalSpeed = getRandomVerticalSpeed();
+            listaTrampas.Add(auxElement);
         }
 
         techo.SetActive(hasTecho);
@@ -115,8 +123,11 @@ public class RoomController : MonoBehaviour
             spawner.SetActive(false);
 
         rellenarSala();
-        //navMesh = transform.Find("ParedSuelo").GetComponent<NavMeshSurface>();
-        //navMesh.Bake();
+    }
+
+    public float getRandomVerticalSpeed()
+    {
+        return Random.Range(0.01f, 0.21f);
     }
 
     private void initListaLaterales()
@@ -271,6 +282,11 @@ public class RoomController : MonoBehaviour
 
     }
 
+    public void addCantTrampasHackeablesTotal()
+    {
+        edificio.cantTrampasHackeablesTotal++;
+    }
+
     private void disposicionGeneradoresObjetos()
     {
 
@@ -312,27 +328,39 @@ public class RoomController : MonoBehaviour
         if (tipoHabitacion == tipo.Entrada || tipoHabitacion == tipo.Banyo )
             cameraPosition = 0;
 
-        //print("Saco " + auxCamera + " camaras");
-        //print ("El numero de trampas es " + aux);
+        edificio.setCameraPosition(cameraPosition, this.id);
+
         aux++;
 
         if (tipoHabitacion == tipo.Banyo)
         {
             aux = 0;
-            if(reward == ObjetoRecompensa.tipoRecompensa.ninguno)
-                reward = Random.Range(0, 3) == 1 ? ObjetoRecompensa.tipoRecompensa.conjuntoPuntos : ObjetoRecompensa.tipoRecompensa.ninguno;
+            if (reward == ObjetoRecompensa.tipoRecompensa.ninguno)
+            {
+                int auxPuntos = Random.Range(0, 3);
+                if(auxPuntos == 0)
+                {
+                    reward = ObjetoRecompensa.tipoRecompensa.conjuntoPuntos;
+                    edificio.setReward(reward, this.id);
+                }
+            }
         }
 
         if (reward == ObjetoRecompensa.tipoRecompensa.ninguno)
         {
 
-            if (listaTrampas != null)
+            if (listaTrampas.Count != 0)
                 aux = listaTrampas.Count;
             else
                 aux--;
 
             if (aux > 0)
             {
+                bool generoNuevas = true;
+
+                if (listaTrampas.Count != 0)
+                    generoNuevas = false;
+
                 Vector3 position;
                 for (int i = 0; i < aux; i++)
                 {
@@ -345,25 +373,44 @@ public class RoomController : MonoBehaviour
                     GameObject objeto = Instantiate(generadorPrefab, position, Quaternion.identity);
                     objeto.GetComponent<GeneradorObjetos>().nivel = dificultad;
                     objeto.GetComponent<GeneradorObjetos>().estilo = estilo;
-
                     GameObject auxObj;
-                    if (listaTrampas == null)
+                    if (generoNuevas)
                     {
-                        GeneradorObjetos.tipo objetoRandom = GeneradorObjetos.getRandomObject();
-                        if (objetoRandom == GeneradorObjetos.tipo.Cepo || objetoRandom == GeneradorObjetos.tipo.Mina)
-                            edificio.cantTrampasHackeablesTotal++;
+                        GeneradorObjetos.trapStruct auxItem = new GeneradorObjetos.trapStruct();
 
-                        auxObj = objeto.GetComponent<GeneradorObjetos>().generateObjects(objetoRandom);
+                        auxItem.tipo = GeneradorObjetos.getRandomObject();
+                        auxItem.level = dificultad;
+                        auxItem.verticalSpeed = 0;
+                        auxObj = objeto.GetComponent<GeneradorObjetos>().generateObjects(auxItem.tipo);
 
+                        if (auxItem.tipo == GeneradorObjetos.tipo.RedLaser)
+                        {
+                            auxItem.verticalSpeed = getRandomVerticalSpeed();
+                            auxObj.GetComponent<RedLaserController>().setVerticalSpeed(auxItem.verticalSpeed);
+                        }
+
+                        listaTrampas.Add(auxItem);
 
                     }
                     else
-                        auxObj = objeto.GetComponent<GeneradorObjetos>().generateObjects(listaTrampas[i]);
+                    {
+                        if (listaTrampas[i].tipo == GeneradorObjetos.tipo.RedLaser)
+                        {
+                            auxObj = objeto.GetComponent<GeneradorObjetos>().generateObjects(listaTrampas[i].tipo);
+                            auxObj.GetComponent<RedLaserController>().setVerticalSpeed(listaTrampas[i].verticalSpeed);
+                        }
+                        else
+                        {
+                            auxObj = objeto.GetComponent<GeneradorObjetos>().generateObjects(listaTrampas[i].tipo);
+                        }
+
+                    }
 
                     objeto.transform.SetParent(this.transform);
                     auxObj.transform.SetParent(this.transform);
 
                 }
+                edificio.setListaTrampas(listaTrampas, this.id);
             }
         }
         else
@@ -382,16 +429,8 @@ public class RoomController : MonoBehaviour
             auxObj.GetComponent<ObjetoRecompensa>().tipoObjeto = reward;
             objeto.transform.SetParent(this.transform);
             auxObj.transform.SetParent(this.transform);
+            edificio.setListaTrampas(listaTrampas, this.id);
         }
-
-    }
-
-    public void addTrampaToList(GeneradorObjetos.tipo trampa)
-    {
-        if (listaTrampas == null)
-            listaTrampas = new List<GeneradorObjetos.tipo>();
-
-        listaTrampas.Add(trampa);
 
     }
 
@@ -486,7 +525,6 @@ public class RoomController : MonoBehaviour
                     auxDiv = (tHab / (numeroElementos));
                     break;
             }
-
             List<int> elements = new List<int>();
 
             while (elements.Count < auxRandElement)
@@ -515,6 +553,8 @@ public class RoomController : MonoBehaviour
                 }
             }
         }
+        edificio.setCantSitiosOcultos(cantSitiosOcultos, this.id);
+
     }
 
     private void disposicionDecorados()
@@ -680,7 +720,7 @@ public class RoomController : MonoBehaviour
                 techo.transform.position = new Vector3(techo.transform.position.x, techo.transform.position.y + altTecho, techo.transform.position.z);
             }
         }
-
+        edificio.setListaLaterales(listaLaterales, this.id);
     }
 
     /*

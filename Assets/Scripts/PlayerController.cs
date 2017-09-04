@@ -79,7 +79,7 @@ public class PlayerController : MonoBehaviour
     private float modoSigiloHeight;
     private float normalHeight;
     //private GameObject canvas;
-    private CanvasController canvas;
+    private MainMenuController canvas;
     private GameObject mira;
     public float points;
     private float secDetected;
@@ -102,12 +102,13 @@ public class PlayerController : MonoBehaviour
     // Use this for initialization
     void Start()
     {
+        Time.timeScale = 1;
         gancho = transform.Find("Gadgets").Find("Gancho").gameObject;
         rigidBody = GetComponent<Rigidbody>();
         anim = GetComponent<Animator>();
         controller = GetComponent<CharacterController>();
         shurikenPrefab = Resources.Load("Prefabs/Shuriken", typeof(GameObject)) as GameObject;
-        canvas = transform.Find("Canvas").GetComponent<CanvasController>();
+        canvas = transform.parent.GetComponentInParent<MainMenuController>();
         mira = transform.Find("PuntoMira").gameObject;
 
         missionRewards = new List<ObjetoRecompensa.tipoRecompensa>();
@@ -126,6 +127,8 @@ public class PlayerController : MonoBehaviour
             pointsPerDetection = Edificio.dificultad * 0.5f;
 
         }
+        canvas.setPlayer(this.gameObject.GetComponent<PlayerController>());
+        canvas.setEdificio(Edificio);
         trapCount = Edificio.cantTrampasHackeablesTotal;
         canvas.updateTrapCount(trapCount);
         hidden = false;
@@ -139,8 +142,8 @@ public class PlayerController : MonoBehaviour
         rollingDistance = 10;
         rollingTime = 1f;
         rollingStep = 1;
-        modoSigiloHeight = 2.53f;
-        normalHeight = 3.96f;
+        modoSigiloHeight = 2.95f;
+        normalHeight = 3.61f;
         shurikenRecoveryTime = 10f;
         objetoEquipado = 0;
         distMaximaMira = 75;
@@ -216,16 +219,14 @@ public class PlayerController : MonoBehaviour
     {
         if (!pausado)
         {
-            print("Pauso");
             pausado = true;
-            canvas.transform.Find("CanvasMenu").GetComponent<IngameMenuController>().setEstado(1);
+            canvas.setEstado(5);
             Time.timeScale = 0;
         }
         else
         {
-            print("Despauso");
             pausado = false;
-            canvas.transform.Find("CanvasMenu").GetComponent<IngameMenuController>().setEstado(0);
+            canvas.setEstado(4);
             Time.timeScale = 1;
         }
 
@@ -343,7 +344,6 @@ public class PlayerController : MonoBehaviour
                 {
                     if (!rolling)
                     {
-                        print("EMPIEZO");
                         rolling = true;
                         rollingInitialPosition = transform.position.x;
 
@@ -472,8 +472,6 @@ public class PlayerController : MonoBehaviour
     {
         vida -= damage;
         canvas.updateLifeBar(vida / maxVida);
-        print("Has recibido " + damage + " de daño - Vida restante " + vida);
-
     }
 
     private void swap()
@@ -608,8 +606,8 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        canvas.transform.Find("CanvasMenu").GetComponent<IngameMenuController>().setDatosFinPartida(vida, Edificio.objetivosMision, obj1, obj2, trapCount, Edificio.cantTrampasHackeablesTotal, Edificio.tiempoNivel, points);
-        canvas.transform.Find("CanvasMenu").GetComponent<IngameMenuController>().setEstado(2);
+        canvas.setDatosFinPartida(vida, Edificio.objetivosMision, obj1, obj2, trapCount, Edificio.cantTrampasHackeablesTotal, Edificio.tiempoNivel, points);
+        canvas.setEstado(6);
     }
 
     private void usoObjeto()
@@ -621,7 +619,7 @@ public class PlayerController : MonoBehaviour
         }
         if (recoveringShuriken && TimeNextShuriken < Time.time)
         {
-            print("Recupero 1 Shuriken");
+            //print("Recupero 1 Shuriken");
             shurikenCount++;
             canvas.updateCantShurikens(shurikenCount);
             recoveringShuriken = false;
