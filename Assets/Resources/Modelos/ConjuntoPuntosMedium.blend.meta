@@ -27,6 +27,19 @@ ModelImporter:
     100038: Cylinder_034
     100040: Cylinder_035
     100042: Cube_002
+    100044: Cylinder_000
+    100046: Cylinder_001
+    100048: Cylinder_002
+    100050: Cylinder_003
+    100052: Cylinder_004
+    100054: Cylinder_005
+    100056: Cylinder_006
+    100058: Cylinder_007
+    100060: Cylinder_008
+    100062: Cylinder_009
+    100064: Cylinder_010
+    100066: Cylinder_017
+    100068: Plane
     400000: //RootNode
     400002: Cube
     400004: Cube_001
@@ -49,6 +62,19 @@ ModelImporter:
     400038: Cylinder_034
     400040: Cylinder_035
     400042: Cube_002
+    400044: Cylinder_000
+    400046: Cylinder_001
+    400048: Cylinder_002
+    400050: Cylinder_003
+    400052: Cylinder_004
+    400054: Cylinder_005
+    400056: Cylinder_006
+    400058: Cylinder_007
+    400060: Cylinder_008
+    400062: Cylinder_009
+    400064: Cylinder_010
+    400066: Cylinder_017
+    400068: Plane
     2300000: Cube
     2300002: Cube_001
     2300004: Cylinder_011
@@ -70,6 +96,19 @@ ModelImporter:
     2300036: Cylinder_034
     2300038: Cylinder_035
     2300040: Cube_002
+    2300042: Cylinder_000
+    2300044: Cylinder_001
+    2300046: Cylinder_002
+    2300048: Cylinder_003
+    2300050: Cylinder_004
+    2300052: Cylinder_005
+    2300054: Cylinder_006
+    2300056: Cylinder_007
+    2300058: Cylinder_008
+    2300060: Cylinder_009
+    2300062: Cylinder_010
+    2300064: Cylinder_017
+    2300066: Plane
     3300000: Cube
     3300002: Cube_001
     3300004: Cylinder_011
@@ -91,6 +130,19 @@ ModelImporter:
     3300036: Cylinder_034
     3300038: Cylinder_035
     3300040: Cube_002
+    3300042: Cylinder_000
+    3300044: Cylinder_001
+    3300046: Cylinder_002
+    3300048: Cylinder_003
+    3300050: Cylinder_004
+    3300052: Cylinder_005
+    3300054: Cylinder_006
+    3300056: Cylinder_007
+    3300058: Cylinder_008
+    3300060: Cylinder_009
+    3300062: Cylinder_010
+    3300064: Cylinder_017
+    3300066: Plane
     4300000: Cube
     4300002: Cylinder_011
     4300004: Cylinder_012
@@ -112,6 +164,19 @@ ModelImporter:
     4300036: Cylinder_035
     4300038: Cube_001
     4300040: Cube_002
+    4300042: Plane
+    4300044: Cylinder_000
+    4300046: Cylinder_001
+    4300048: Cylinder_002
+    4300050: Cylinder_003
+    4300052: Cylinder_004
+    4300054: Cylinder_005
+    4300056: Cylinder_006
+    4300058: Cylinder_007
+    4300060: Cylinder_008
+    4300062: Cylinder_009
+    4300064: Cylinder_010
+    4300066: Cylinder_017
     7400000: Default Take
     9500000: //RootNode
   materials:
